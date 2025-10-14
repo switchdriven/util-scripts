@@ -114,6 +114,52 @@ claude mcp remove github-work -s local
 
 詳細な設定方法とトラブルシューティングについては[MCP_SETUP.md](MCP_SETUP.md)を参照してください。
 
+### GitHub操作のポリシー
+
+Claude Codeでは、MCPと`gh` CLIの両方を使ってGitHub操作ができますが、以下のポリシーに従ってください。
+
+#### 基本方針: `gh` CLIを優先
+
+**重要な操作（失敗できない操作）は必ず`gh` CLIを使用してください。**
+
+| 操作カテゴリ | 推奨ツール | 理由 |
+|------------|----------|------|
+| **リポジトリ作成・削除** | `gh` CLI | 確実性が最重要 |
+| **PR作成・マージ** | `gh` CLI | 確実性が最重要 |
+| **issue作成** | `gh` CLI | 確実性が最重要 |
+| **ブランチ作成** | `gh` CLI | 確実性が最重要 |
+| リポジトリ一覧・検索 | MCP可 | 分析作業なのでエラー許容 |
+| issue一覧・検索・分析 | MCP可 | 分析作業なのでエラー許容 |
+| PR一覧・レビュー確認 | MCP可 | 分析作業なのでエラー許容 |
+| コード検索 | MCP可 | 分析作業なのでエラー許容 |
+
+#### 具体的な使い分け
+
+```bash
+# ✅ 推奨: gh CLIで確実に実行
+gh repo create my-project --public
+gh pr create --title "feat: add feature" --body "Description"
+gh issue create --title "Bug" --body "Details"
+
+# ⚠️ MCPは補助的に使用（エラーが出たらgh CLIにフォールバック）
+# Claude Code内で: "@github-personal を有効にして、過去1週間のPRを分析して"
+```
+
+#### エラー時の対応
+
+MCPツールでエラーが発生した場合：
+1. Claude Codeを再起動してみる
+2. それでもダメなら`gh` CLIを使う
+3. **`gh` CLIなら確実に動作する**
+
+#### 理由
+
+- **MCPはまだ発展途上**: 設定が複雑、エラーが発生しやすい
+- **gh CLIは安定**: GitHub公式、独自認証、明確なエラーメッセージ
+- **役割分担**: 重要な操作は確実性、分析作業は利便性を優先
+
+詳細は[MCP_SETUP.md - MCPとgh CLIの使い分け](MCP_SETUP.md#mcpとgh-cliの使い分け)を参照してください。
+
 ## プロジェクト構造
 
 このリポジトリはユーティリティスクリプトを格納するように設計されています。スクリプトを追加する際は、以下の観点で整理してください:
