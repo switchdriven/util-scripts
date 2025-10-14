@@ -150,6 +150,114 @@ claude mcp get github-work
 claude mcp remove github-work -s local
 ```
 
+## MCPサーバーの切り替え
+
+プロジェクトで使用するGitHubを切り替えたい場合、以下の方法があります。
+
+### 方法1: 両方を登録して使い分ける（推奨）
+
+会社用と個人用の両方を登録しておき、Claude Code内で切り替える方法です。
+
+```bash
+# 会社用を追加
+./setup-python-env.sh --mcp work .
+
+# 個人用を追加
+./setup-python-env.sh --mcp personal .
+
+# 確認
+claude mcp list
+```
+
+**Claude Code内での使い分け:**
+```
+# 会社用GitHubを使う
+@github-work を有効にして、リポジトリ一覧を取得して
+
+# 個人用GitHubを使う
+@github-personal を有効にして、リポジトリ一覧を取得して
+```
+
+**メリット:**
+- 削除不要で柔軟に使い分けられる
+- プロジェクトごとに異なるGitHubを使える
+- Claude Code内で簡単に切り替え可能
+
+### 方法2: 完全に置き換える
+
+現在のMCPサーバーを削除して、別のものに置き換える方法です。
+
+#### 会社用 → 個人用に切り替え
+
+```bash
+# 1. 会社用を削除
+claude mcp remove github-work -s local
+
+# 2. 個人用を追加
+./setup-python-env.sh --mcp personal .
+
+# 3. 確認
+claude mcp list
+# 出力: github-personal のみが表示される
+```
+
+#### 個人用 → 会社用に切り替え
+
+```bash
+# 1. 個人用を削除
+claude mcp remove github-personal -s local
+
+# 2. 会社用を追加
+./setup-python-env.sh --mcp work .
+
+# 3. 確認
+claude mcp list
+# 出力: github-work のみが表示される
+```
+
+**注意事項:**
+- スクリプト実行時に`.envrc`の更新を確認されます
+- "Y"を選択すると、環境変数が新しいMCP設定に合わせて更新されます
+- 更新後は`direnv allow`で設定を再読み込みしてください（スクリプトが自動実行）
+
+### 方法3: 手動で追加・削除
+
+スクリプトを使わずに直接操作する方法です。
+
+```bash
+# MCPサーバーを追加
+claude mcp add --transport stdio github-personal -- ~/Scripts/Shell/run-github-mcp-personal.sh
+
+# MCPサーバーを削除
+claude mcp remove github-work -s local
+
+# 確認
+claude mcp list
+```
+
+手動で追加した場合は、`.envrc`も手動で編集する必要があります:
+
+```bash
+# .envrcを編集
+vi .envrc
+
+# 個人用の場合
+export GITHUB_PERSONAL_TOKEN=$(op read "op://Personal/GitHub For MCP/token")
+
+# 会社用の場合
+export GITHUB_WORK_TOKEN=$(op read "op://Personal/GitHubEnt For MCP/token")
+
+# direnvに変更を反映
+direnv allow
+```
+
+### おすすめの方法
+
+**方法1（両方登録）**を推奨します：
+- 最も柔軟で使いやすい
+- プロジェクトごとに適切なGitHubを選択できる
+- 削除の手間がない
+
 ## トラブルシューティング
 
 ### MCPサーバーが接続できない
