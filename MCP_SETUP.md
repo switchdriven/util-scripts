@@ -154,6 +154,23 @@ claude mcp remove github-work -s local
 
 プロジェクトで使用するGitHubを切り替えたい場合、以下の方法があります。
 
+### ⚠️ 重要な注意事項
+
+MCPサーバーを切り替える際は、以下の点に注意してください：
+
+1. **MCPサーバー名とツール名は別物**
+   - 設定ファイルのサーバー名: `github-work` または `github-personal`
+   - Claude Code内で使えるMCPツール名: サーバー名に関係なく固定
+   - 実際の接続先: ラッパースクリプトで決定
+
+2. **Claude Codeの再起動が必要**
+   - MCPサーバーを切り替えた後は、**Claude Codeを完全に再起動**してください
+   - 再起動しないと、古い設定のまま動作する可能性があります
+
+3. **`gh` CLIとの使い分け**
+   - MCPツールが正しく動作しない場合は、`gh`コマンドを使用することを推奨
+   - `gh`コマンドは独自の認証情報を使用するため、より確実に動作します
+
 ### 方法1: 両方を登録して使い分ける（推奨）
 
 会社用と個人用の両方を登録しておき、Claude Code内で切り替える方法です。
@@ -167,6 +184,11 @@ claude mcp remove github-work -s local
 
 # 確認
 claude mcp list
+# 出力:
+# github-work: ... ✓ Connected
+# github-personal: ... ✓ Connected
+
+# Claude Codeを再起動
 ```
 
 **Claude Code内での使い分け:**
@@ -183,9 +205,19 @@ claude mcp list
 - プロジェクトごとに異なるGitHubを使える
 - Claude Code内で簡単に切り替え可能
 
+**この方法が最も推奨される理由:**
+- 両方のGitHubアカウントを同時に使える
+- 切り替えの手間が少ない
+- MCPツールの動作が予測しやすい
+
 ### 方法2: 完全に置き換える
 
 現在のMCPサーバーを削除して、別のものに置き換える方法です。
+
+**⚠️ 注意: この方法には制限があります**
+- MCPツールはClaude Code起動時に読み込まれるため、切り替え後に**Claude Codeの再起動が必須**です
+- 再起動を忘れると、古い設定のまま動作する可能性があります
+- **方法1（両方登録）の方が安全で推奨されます**
 
 #### 会社用 → 個人用に切り替え
 
@@ -195,10 +227,13 @@ claude mcp remove github-work -s local
 
 # 2. 個人用を追加
 ./setup-python-env.sh --mcp personal .
+# スクリプト実行中に.envrcの更新を聞かれたら "Y" を選択
 
 # 3. 確認
 claude mcp list
 # 出力: github-personal のみが表示される
+
+# 4. Claude Codeを完全に再起動（重要！）
 ```
 
 #### 個人用 → 会社用に切り替え
@@ -209,20 +244,37 @@ claude mcp remove github-personal -s local
 
 # 2. 会社用を追加
 ./setup-python-env.sh --mcp work .
+# スクリプト実行中に.envrcの更新を聞かれたら "Y" を選択
 
 # 3. 確認
 claude mcp list
 # 出力: github-work のみが表示される
+
+# 4. Claude Codeを完全に再起動（重要！）
 ```
 
 **注意事項:**
-- スクリプト実行時に`.envrc`の更新を確認されます
-- "Y"を選択すると、環境変数が新しいMCP設定に合わせて更新されます
-- 更新後は`direnv allow`で設定を再読み込みしてください（スクリプトが自動実行）
+- スクリプト実行時に`.envrc`の更新を確認されます → "Y"を選択
+- 環境変数が新しいMCP設定に合わせて更新されます
+- `direnv allow`で設定を再読み込み（スクリプトが自動実行）
+- **必ずClaude Codeを再起動**してください
+- 再起動しないと、MCPツールが正しく動作しない可能性があります
+
+**代替手段:**
+MCPツールが正しく動作しない場合は、以下のコマンドを直接使用することを推奨：
+```bash
+# リポジトリ作成
+gh repo create <name> --public/--private
+
+# リポジトリ操作
+gh repo view <owner>/<repo>
+gh issue list
+gh pr list
+```
 
 ### 方法3: 手動で追加・削除
 
-スクリプトを使わずに直接操作する方法です。
+スクリプトを使わずに直接操作する方法です。上級者向けです。
 
 ```bash
 # MCPサーバーを追加
@@ -233,6 +285,8 @@ claude mcp remove github-work -s local
 
 # 確認
 claude mcp list
+
+# Claude Codeを再起動（重要！）
 ```
 
 手動で追加した場合は、`.envrc`も手動で編集する必要があります:
@@ -251,12 +305,27 @@ export GITHUB_WORK_TOKEN=$(op read "op://Personal/GitHubEnt For MCP/token")
 direnv allow
 ```
 
-### おすすめの方法
+### まとめ: おすすめの方法
 
-**方法1（両方登録）**を推奨します：
+以下の理由から、**方法1（両方登録）**を強く推奨します：
+
+**方法1のメリット:**
 - 最も柔軟で使いやすい
 - プロジェクトごとに適切なGitHubを選択できる
 - 削除の手間がない
+- Claude Codeの再起動が不要（両方とも起動時に読み込まれる）
+- MCPツールの動作が予測しやすい
+
+**方法2・3の問題点:**
+- Claude Codeの再起動が必須
+- MCPツール名とサーバー名の不一致による混乱
+- 切り替えの手間がかかる
+- エラーが発生しやすい
+
+**実際の運用では:**
+- 両方のMCPサーバーを登録しておき、Claude Code内で`@github-work`または`@github-personal`を使い分ける
+- MCPツールが動作しない場合は、`gh` CLIを使う
+- この2つの方法を組み合わせることで、確実にGitHub操作ができます
 
 ## トラブルシューティング
 
