@@ -212,13 +212,15 @@ setup_direnv() {
         echo "source ${VENV_DIR}/bin/activate"
         echo ""
 
-        # Add GitHub tokens if MCP is configured
+        # Add GitHub tokens and username if MCP is configured
         if [[ -n "$MCP_CONFIG" ]]; then
-            echo "# GitHub API tokens for MCP"
+            echo "# GitHub API tokens and username for MCP"
             if [[ "$MCP_CONFIG" == "work" ]]; then
                 echo 'export GITHUB_WORK_TOKEN=$(op read "op://Personal/GitHubEnt For MCP/token")'
+                echo 'export GITHUB_USERNAME="juny-s"'
             elif [[ "$MCP_CONFIG" == "personal" ]]; then
                 echo 'export GITHUB_PERSONAL_TOKEN=$(op read "op://Personal/GitHub For MCP/token")'
+                echo 'export GITHUB_USERNAME="switchdriven"'
             fi
         fi
     } > "$temp_file"

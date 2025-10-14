@@ -85,15 +85,34 @@ source .venv_uv/bin/activate
 
 ## MCP（Model Context Protocol）設定
 
+### GitHubアカウント情報
+
+- **会社用GitHub Enterprise**
+  - ドメイン: `gh.iiji.jp`
+  - ユーザー名: `juny-s`
+  - MCPサーバー名: `github-work`
+  - 環境変数: `GITHUB_USERNAME=juny-s`（`.envrc`で自動設定）
+
+- **個人用GitHub.com**
+  - ドメイン: `github.com`
+  - ユーザー名: `switchdriven`
+  - MCPサーバー名: `github-personal`
+  - 環境変数: `GITHUB_USERNAME=switchdriven`（`.envrc`で自動設定）
+
+`setup-python-env.sh`でMCP設定を指定すると、`.envrc`に自動的にGitHubユーザー名が設定されます。
+Claude Codeはこのユーザー名を使ってMCP検索を行います。
+
 ### MCPサーバーの種類
 
 1. **github-work**: 会社用GitHub Enterprise
    - 対象: `gh.iiji.jp`
+   - ユーザー名: `juny-s`
    - トークン: `op://Personal/GitHubEnt For MCP/token`
    - ラッパー: `~/Scripts/Shell/run-github-mcp-work.sh`
 
 2. **github-personal**: 個人用GitHub.com
    - 対象: `github.com`
+   - ユーザー名: `switchdriven`
    - トークン: `op://Personal/GitHub For MCP/token`
    - ラッパー: `~/Scripts/Shell/run-github-mcp-personal.sh`
 

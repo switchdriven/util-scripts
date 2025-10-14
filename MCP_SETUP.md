@@ -16,15 +16,19 @@
 ### 1. 会社用GitHub（`github-work`）
 
 - **対象**: GitHub Enterprise (`gh.iiji.jp`)
+- **ユーザー名**: `juny-s`
 - **トークン**: `op://Personal/GitHubEnt For MCP/token`
 - **ラッパースクリプト**: `~/Scripts/Shell/run-github-mcp-work.sh`
+- **環境変数**: `GITHUB_USERNAME=juny-s`（`.envrc`で自動設定）
 - **利用可能な機能**: repos, issues, pull_requests, actions
 
 ### 2. 個人用GitHub（`github-personal`）
 
 - **対象**: GitHub.com (`https://github.com`)
+- **ユーザー名**: `switchdriven`
 - **トークン**: `op://Personal/GitHub For MCP/token`
 - **ラッパースクリプト**: `~/Scripts/Shell/run-github-mcp-personal.sh`
+- **環境変数**: `GITHUB_USERNAME=switchdriven`（`.envrc`で自動設定）
 - **利用可能な機能**: repos, issues, pull_requests, actions
 
 ## アーキテクチャ
@@ -95,6 +99,8 @@ exec npx -y @modelcontextprotocol/server-github
 これにより以下が自動的に行われます:
 1. Python仮想環境の作成（`.venv_uv/`）
 2. direnv設定ファイル（`.envrc`）の作成
+   - `GITHUB_WORK_TOKEN`: 1Passwordから取得
+   - `GITHUB_USERNAME`: `juny-s`を設定
 3. MCPサーバー `github-work` の登録（まだ登録されていない場合）
 
 #### 個人用GitHubと連携する場合
@@ -103,7 +109,12 @@ exec npx -y @modelcontextprotocol/server-github
 ./setup-python-env.sh --mcp personal my-personal-project
 ```
 
-これにより `github-personal` MCPサーバーが登録されます。
+これにより以下が自動的に行われます:
+1. Python仮想環境の作成（`.venv_uv/`）
+2. direnv設定ファイル（`.envrc`）の作成
+   - `GITHUB_PERSONAL_TOKEN`: 1Passwordから取得
+   - `GITHUB_USERNAME`: `switchdriven`を設定
+3. MCPサーバー `github-personal` の登録（まだ登録されていない場合）
 
 #### MCP設定なしの場合
 
@@ -297,9 +308,11 @@ vi .envrc
 
 # 個人用の場合
 export GITHUB_PERSONAL_TOKEN=$(op read "op://Personal/GitHub For MCP/token")
+export GITHUB_USERNAME="switchdriven"
 
 # 会社用の場合
 export GITHUB_WORK_TOKEN=$(op read "op://Personal/GitHubEnt For MCP/token")
+export GITHUB_USERNAME="juny-s"
 
 # direnvに変更を反映
 direnv allow
@@ -454,6 +467,69 @@ MCPが成熟すれば：
 - 設定が簡略化される
 
 その時点で、MCPをメインツールとして使うことを再検討すべきでしょう。
+
+## GitHubユーザー名の設定と使い方
+
+### 環境変数 `GITHUB_USERNAME`
+
+`setup-python-env.sh`でMCP設定を指定すると、`.envrc`に自動的にGitHubユーザー名が設定されます。
+この環境変数は、Claude CodeがMCP経由でGitHub検索を行う際に使用されます。
+
+### 設定内容
+
+| MCPタイプ | ユーザー名 | 環境変数 |
+|----------|-----------|---------|
+| `--mcp work` | `juny-s` | `GITHUB_USERNAME=juny-s` |
+| `--mcp personal` | `switchdriven` | `GITHUB_USERNAME=switchdriven` |
+
+### 具体的な使用例
+
+#### リポジトリ検索
+```bash
+# MCPがこのユーザー名を使って検索
+user:switchdriven  # 個人用
+user:juny-s        # 会社用
+```
+
+#### Claude Code内での使い方
+```
+# 個人用GitHubで検索
+@github-personal を有効にして、私のリポジトリ一覧を取得して
+
+# 会社用GitHubで検索
+@github-work を有効にして、私のリポジトリ一覧を取得して
+```
+
+Claude Codeは自動的に`$GITHUB_USERNAME`環境変数を参照して、適切なユーザー名で検索を行います。
+
+### 確認方法
+
+環境変数が正しく設定されているか確認：
+```bash
+# ディレクトリに移動（direnvが自動的に環境変数を読み込む）
+cd my-project
+
+# 環境変数を確認
+echo $GITHUB_USERNAME
+# 出力例: switchdriven または juny-s
+```
+
+### トラブルシューティング
+
+#### 環境変数が設定されていない場合
+
+1. `.envrc`を確認：
+   ```bash
+   cat .envrc
+   # GITHUB_USERNAME="switchdriven" が含まれているか確認
+   ```
+
+2. direnvを再適用：
+   ```bash
+   direnv allow
+   ```
+
+3. VS Codeを再起動（必要に応じて）
 
 ## トラブルシューティング
 
