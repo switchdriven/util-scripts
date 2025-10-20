@@ -342,7 +342,7 @@ create_gitignore() {
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyc
 *.so
 .Python
 
