@@ -14,7 +14,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - Claude Code MCP (Model Context Protocol) サーバーの設定
    - プロジェクト構造の初期化（pyproject.toml、README.md、.gitignoreなど）
 
-2. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
+2. **check-python-env.sh**: Python仮想環境の検索・確認ツール
+   - 指定ディレクトリ以下の全Python仮想環境を再帰的に検索
+   - `uv`と`venv`/`virtualenv`の環境を自動判別
+   - Pythonバージョンを表示
+   - カラー出力で見やすく表示
+
+3. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
    - 1Password CLIを使った安全なトークン管理
    - ラッパースクリプトによるMCPサーバーの起動
 
@@ -189,7 +195,8 @@ MCPツールでエラーが発生した場合：
 
 ```
 util-scripts/
-├── setup-python-env.sh           # メインセットアップスクリプト
+├── setup-python-env.sh           # Python開発環境セットアップスクリプト
+├── check-python-env.sh           # Python仮想環境検索ツール
 ├── MCP_SETUP.md                  # MCP設定の詳細ドキュメント
 ├── CLAUDE.md                     # このファイル（プロジェクトガイド）
 └── README.md                     # プロジェクトREADME
@@ -278,9 +285,47 @@ util-scripts/
 
 詳細は[MCP_SETUP.md](MCP_SETUP.md)のトラブルシューティングセクションを参照してください。
 
+## スクリプトの使い方
+
+### check-python-env.sh
+
+Python仮想環境を検索・確認するツールです。
+
+```bash
+# 基本的な使い方
+./check-python-env.sh ~/Dev
+
+# 深さを制限（最大3階層まで）
+./check-python-env.sh -d 3 ~/Dev
+
+# カレントディレクトリを検索
+./check-python-env.sh .
+
+# カラー出力を無効化
+./check-python-env.sh --no-color ~/Dev
+
+# ヘルプを表示
+./check-python-env.sh --help
+```
+
+**出力例**:
+```
+Searching for Python virtual environments in: /Users/junya/Dev
+  [venv] /Users/junya/Dev/iij-cf/.venv (Python 3.12.5)
+  [uv]   /Users/junya/Dev/util-scripts/.venv_uv (Python 3.13.8)
+Found 2 environments: 1 uv, 1 venv
+```
+
+**機能**:
+- `uv`で作成された仮想環境は`[uv]`（シアン色）で表示
+- `venv`/`virtualenv`で作成された仮想環境は`[venv]`（緑色）で表示
+- Pythonバージョンを自動検出（`pyvenv.cfg`から読み取り）
+- サマリーで環境タイプごとの数を表示
+
 ## 参考資料
 
 - [setup-python-env.sh使い方](./setup-python-env.sh) - `--help`オプションで詳細を確認
+- [check-python-env.sh使い方](./check-python-env.sh) - `--help`オプションで詳細を確認
 - [MCP設定ガイド](./MCP_SETUP.md) - MCPの詳細な設定とトラブルシューティング
 - [uv公式ドキュメント](https://github.com/astral-sh/uv)
 - [direnv公式ドキュメント](https://direnv.net/)

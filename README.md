@@ -29,6 +29,43 @@ Python開発環境を自動でセットアップするスクリプトです。
 ./setup-python-env.sh --help
 ```
 
+### check-python-env.sh
+
+Python仮想環境を検索・確認するツールです。
+
+- 指定ディレクトリ以下の全Python仮想環境を再帰的に検索
+- `uv`と`venv`/`virtualenv`の環境を自動判別
+- Pythonバージョンを表示
+- カラー出力で見やすく表示
+
+#### 使い方
+
+```bash
+# 基本的な使い方
+./check-python-env.sh ~/Dev
+
+# 深さを制限（最大3階層まで）
+./check-python-env.sh -d 3 ~/Dev
+
+# カレントディレクトリを検索
+./check-python-env.sh .
+
+# カラー出力を無効化
+./check-python-env.sh --no-color ~/Dev
+
+# ヘルプの表示
+./check-python-env.sh --help
+```
+
+#### 出力例
+
+```
+Searching for Python virtual environments in: /Users/junya/Dev
+  [venv] /Users/junya/Dev/iij-cf/.venv (Python 3.12.5)
+  [uv]   /Users/junya/Dev/util-scripts/.venv_uv (Python 3.13.8)
+Found 2 environments: 1 uv, 1 venv
+```
+
 ## 必須ツール
 
 - **uv**: Python仮想環境管理ツール
