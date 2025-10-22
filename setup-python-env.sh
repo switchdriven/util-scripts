@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default values
-VENV_DIR=".venv_uv"
+VENV_DIR=".venv"
 PYTHON_VERSION="3.13"
 MCP_CONFIG=""  # Can be "work", "personal", or empty (no MCP)
 

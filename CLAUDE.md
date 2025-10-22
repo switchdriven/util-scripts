@@ -29,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Python環境
 - Python仮想環境は`uv`で管理
 - デフォルトのPythonバージョン: 3.13
-- 仮想環境の場所: `.venv_uv/`（カスタマイズ可能）
+- 仮想環境の場所: `.venv/`（カスタマイズ可能）
 - 環境のアクティベーションは`direnv`が`.envrc`経由で自動実行
 
 ### 必須ツール
@@ -86,7 +86,7 @@ cd my-project
 # 自動的に仮想環境がアクティベートされる
 
 # 必要に応じて手動でアクティベート
-source .venv_uv/bin/activate
+source .venv/bin/activate
 ```
 
 ## MCP（Model Context Protocol）設定
@@ -312,7 +312,7 @@ Python仮想環境を検索・確認するツールです。
 ```
 Searching for Python virtual environments in: /Users/junya/Dev
   [venv] /Users/junya/Dev/iij-cf/.venv (Python 3.12.5)
-  [uv]   /Users/junya/Dev/util-scripts/.venv_uv (Python 3.13.8)
+  [uv]   /Users/junya/Dev/util-scripts/.venv (Python 3.13.8)
 Found 2 environments: 1 uv, 1 venv
 ```
 
