@@ -428,8 +428,8 @@ def main():
         except Exception as e:
             print(f"Error loading prompts file: {e}")
             return
-    
-            # 評価の実行
+
+    # 評価の実行
     evaluator = LLMSpeedEvaluator(args.api_key, args.base_url, args.api_type)
     
     try:

@@ -66,6 +66,44 @@ Searching for Python virtual environments in: /Users/junya/Dev
 Found 2 environments: 1 uv, 1 venv
 ```
 
+### llm-evaluator.py
+
+OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価するPythonスクリプトです。
+
+- OpenAI、LiteLLM、Ollama APIに対応
+- 複数プロンプトでのベンチマーク実行
+- トークン/秒、レスポンス時間などの統計情報を表示
+- 結果をJSONファイルにエクスポート可能
+
+#### 使い方
+
+```bash
+# 基本的な使い方（OpenAI API）
+./llm-evaluator.py --api-key YOUR_API_KEY --model gpt-3.5-turbo
+
+# LiteLLMを使用
+./llm-evaluator.py --api-key YOUR_KEY --base-url http://localhost:4000 --api-type litellm --model gpt-4
+
+# Ollamaを使用
+./llm-evaluator.py --api-key dummy --base-url http://localhost:11434 --api-type ollama --model llama2
+
+# カスタム設定
+./llm-evaluator.py --api-key YOUR_KEY --model gpt-4 --max-tokens 1000 --iterations 3 --output results.json
+
+# カスタムプロンプトファイルを使用
+./llm-evaluator.py --api-key YOUR_KEY --model gpt-4 --prompts-file my_prompts.json
+
+# ヘルプの表示
+./llm-evaluator.py --help
+```
+
+#### 必要な依存関係
+
+```bash
+# 依存パッケージのインストール
+uv pip install -r requirements.txt
+```
+
 ## 必須ツール
 
 - **uv**: Python仮想環境管理ツール

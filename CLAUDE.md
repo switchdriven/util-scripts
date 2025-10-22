@@ -20,7 +20,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - Pythonバージョンを表示
    - カラー出力で見やすく表示
 
-3. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
+3. **llm-evaluator.py**: LLM速度ベンチマークツール
+   - OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価
+   - OpenAI、LiteLLM、Ollama APIに対応
+   - 複数プロンプトでのベンチマーク実行
+   - トークン/秒、レスポンス時間などの詳細統計
+   - 結果のJSONエクスポート機能
+
+4. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
    - 1Password CLIを使った安全なトークン管理
    - ラッパースクリプトによるMCPサーバーの起動
 
@@ -322,10 +329,48 @@ Found 2 environments: 1 uv, 1 venv
 - Pythonバージョンを自動検出（`pyvenv.cfg`から読み取り）
 - サマリーで環境タイプごとの数を表示
 
+### llm-evaluator.py
+
+OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価するツールです。
+
+```bash
+# 基本的な使い方（OpenAI API）
+./llm-evaluator.py --api-key YOUR_API_KEY --model gpt-3.5-turbo
+
+# LiteLLMを使用
+./llm-evaluator.py --api-key YOUR_KEY --base-url http://localhost:4000 --api-type litellm --model gpt-4
+
+# Ollamaを使用
+./llm-evaluator.py --api-key dummy --base-url http://localhost:11434 --api-type ollama --model llama2
+
+# カスタム設定（複数回実行、結果をJSON出力）
+./llm-evaluator.py --api-key YOUR_KEY --model gpt-4 --max-tokens 1000 --iterations 3 --output results.json
+
+# カスタムプロンプトファイルを使用
+./llm-evaluator.py --api-key YOUR_KEY --model gpt-4 --prompts-file my_prompts.json
+
+# ヘルプを表示
+./llm-evaluator.py --help
+```
+
+**機能**:
+- OpenAI、LiteLLM、Ollama APIに対応
+- 複数のテストプロンプトで自動ベンチマーク
+- トークン/秒、レスポンス時間の詳細統計（平均、中央値、標準偏差など）
+- 結果をJSONファイルにエクスポート可能
+- localhost自動変換（IPv4/IPv6問題の回避）
+
+**依存関係**:
+```bash
+# 必要なパッケージをインストール
+uv pip install -r requirements.txt
+```
+
 ## 参考資料
 
 - [setup-python-env.sh使い方](./setup-python-env.sh) - `--help`オプションで詳細を確認
 - [check-python-env.sh使い方](./check-python-env.sh) - `--help`オプションで詳細を確認
+- [llm-evaluator.py使い方](./llm-evaluator.py) - `--help`オプションで詳細を確認
 - [MCP設定ガイド](./MCP_SETUP.md) - MCPの詳細な設定とトラブルシューティング
 - [uv公式ドキュメント](https://github.com/astral-sh/uv)
 - [direnv公式ドキュメント](https://direnv.net/)
