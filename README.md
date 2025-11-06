@@ -4,9 +4,38 @@
 
 ## 主な機能
 
-### setup-python-env.sh
+### setup-ruby-env.rb
 
-Python開発環境を自動でセットアップするスクリプトです。
+Ruby開発環境を自動でセットアップするスクリプトです。
+
+- Bundlerを使ったRubyプロジェクト管理
+- `direnv`による環境の自動アクティベーション
+- Claude Code MCP (Model Context Protocol) サーバーの設定
+- プロジェクト構造の初期化（Gemfile、README.md、.gitignoreなど）
+- Bash版より可読性の高いRuby実装
+
+#### 使い方
+
+```bash
+# 基本的な使い方（MCPなし）
+./setup-ruby-env.rb my-project
+
+# 会社用GitHub MCPを設定
+./setup-ruby-env.rb --mcp work my-work-project
+
+# 個人用GitHub MCPを設定
+./setup-ruby-env.rb --mcp personal my-personal-project
+
+# Ruby バージョンを指定
+./setup-ruby-env.rb --ruby-version 3.2 my-project
+
+# ヘルプの表示
+./setup-ruby-env.rb --help
+```
+
+### setup-python-env.rb
+
+Python開発環境を自動でセットアップするスクリプトです。Ruby実装版で可読性が高いコード。
 
 - `uv`を使ったPython仮想環境の作成
 - `direnv`による環境の自動アクティベーション
@@ -14,6 +43,27 @@ Python開発環境を自動でセットアップするスクリプトです。
 - プロジェクト構造の初期化（pyproject.toml、README.md、.gitignoreなど）
 
 #### 使い方
+
+```bash
+# 基本的な使い方（MCPなし）
+./setup-python-env.rb my-project
+
+# 会社用GitHub MCPを設定
+./setup-python-env.rb --mcp work my-work-project
+
+# 個人用GitHub MCPを設定
+./setup-python-env.rb --mcp personal my-personal-project
+
+# Pythonバージョンを指定
+./setup-python-env.rb --python-version 3.12 my-project
+
+# ヘルプの表示
+./setup-python-env.rb --help
+```
+
+### setup-python-env.sh（レガシー版）
+
+Bash実装の旧版です。Ruby版の `setup-python-env.rb` の使用を推奨します。
 
 ```bash
 # 基本的な使い方（MCPなし）
@@ -106,6 +156,26 @@ uv pip install -r requirements.txt
 
 ## 必須ツール
 
+### Ruby環境（setup-ruby-env.rb使用時）
+
+- **Ruby 3.0+**: スクリプト実行環境
+  ```bash
+  # macOS (Homebrew)
+  brew install ruby@3.3
+  ```
+- **Bundler**: Ruby依存関係管理ツール
+  ```bash
+  gem install bundler
+  ```
+- **direnv**: 環境変数の自動読み込みツール
+  ```bash
+  brew install direnv
+  # シェル設定に追加
+  eval "$(direnv hook bash)"  # または zsh
+  ```
+
+### Python環境（setup-python-env.rb使用時）
+
 - **uv**: Python仮想環境管理ツール
   ```bash
   curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -116,6 +186,9 @@ uv pip install -r requirements.txt
   # シェル設定に追加
   eval "$(direnv hook bash)"  # または zsh
   ```
+
+### オプション
+
 - **1Password CLI** (MCPを使う場合):
   ```bash
   brew install 1password-cli

@@ -1,0 +1,22 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+ruby "3.3.10"
+
+# General utilities
+gem "thor", "~> 1.3"        # CLI framework
+gem "colorize", "~> 1.1"    # Color output
+
+# Development dependencies
+group :development do
+  gem "rubocop", "~> 1.70"              # Ruby linter
+  gem "rubocop-performance", "~> 1.20"  # Performance linting
+  gem "reek", "~> 6.1"                  # Code smell detection
+  gem "ruby-lsp", "~> 0.20"             # Language Server Protocol
+end
+
+group :test do
+  gem "rspec", "~> 3.13"                # Testing framework
+  gem "rspec-expectations", "~> 3.13"   # Expectation framework
+end

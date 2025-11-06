@@ -5,6 +5,14 @@ __pycache__/
 *.so
 .Python
 
+# Ruby
+*.gem
+*.rbc
+.bundle/
+.gems/
+Gemfile.lock
+.ruby-version
+
 # Virtual environments
 .venv_uv/
 .venv/
