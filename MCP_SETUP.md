@@ -169,6 +169,31 @@ github-personal: ~/Scripts/Shell/mcp-github-personal.sh  - ✓ Connected
 github-work: ~/Scripts/Shell/mcp-github-work.sh  - ✓ Connected
 ```
 
+## Claude Desktop 設定
+
+Claude Desktop でもMCPサーバーを使用する場合は、`~/.claude/claude.json` を以下のように設定します：
+
+```json
+{
+  "mcpServers": {
+    "github-personal": {
+      "command": "/Users/junya/Scripts/Shell/mcp-github-personal.sh",
+      "args": [],
+      "disabled": false,
+      "alwaysAllow": []
+    },
+    "github-work": {
+      "command": "/Users/junya/Scripts/Shell/mcp-github-work.sh",
+      "args": [],
+      "disabled": false,
+      "alwaysAllow": []
+    }
+  }
+}
+```
+
+設定後、Claude Desktop を再起動することで MCPサーバーが有効になります。
+
 ## 動作確認
 
 ### Claude Code での使用
@@ -180,6 +205,10 @@ or
 
 @github-work を有効にして、会社用リポジトリのissueを一覧表示して
 ```
+
+### Claude Desktop での使用
+
+同様に `@github-personal` または `@github-work` を使用します。
 
 ### トークン更新
 
