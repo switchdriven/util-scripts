@@ -241,15 +241,14 @@ class SetupPythonEnv
     content += "source #{@venv_dir}/bin/activate\n"
     content += "\n"
 
-    # GitHub tokens for MCP if configured
+    # GitHub username for MCP if configured
     unless @mcp_config.empty?
-      content += "# GitHub API tokens and username for MCP\n"
+      content += "# GitHub username for MCP\n"
+      content += "# Note: API tokens are managed via Keychain (1Password → Keychain via mcp-github-setting.sh)\n"
       case @mcp_config
       when "work"
-        content += 'export GITHUB_WORK_TOKEN=$(op read "op://Personal/GitHubEnt For MCP/token")' + "\n"
         content += 'export GITHUB_USERNAME="juny-s"' + "\n"
       when "personal"
-        content += 'export GITHUB_PERSONAL_TOKEN=$(op read "op://Personal/GitHub For MCP/token")' + "\n"
         content += 'export GITHUB_USERNAME="switchdriven"' + "\n"
       end
     end

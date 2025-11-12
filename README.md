@@ -112,7 +112,7 @@ Python仮想環境を検索・確認するツールです。
 ```
 Searching for Python virtual environments in: /Users/junya/Dev
   [venv] /Users/junya/Dev/iij-cf/.venv (Python 3.12.5)
-  [uv]   /Users/junya/Dev/util-scripts/.venv_uv (Python 3.13.8)
+  [uv]   /Users/junya/Dev/util-scripts/.venv (Python 3.13.8)
 Found 2 environments: 1 uv, 1 venv
 ```
 

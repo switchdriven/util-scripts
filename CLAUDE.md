@@ -115,19 +115,27 @@ source .venv/bin/activate
 `setup-python-env.sh`でMCP設定を指定すると、`.envrc`に自動的にGitHubユーザー名が設定されます。
 Claude Codeはこのユーザー名を使ってMCP検索を行います。
 
+### MCPサーバーの実装
+
+- **MCPサーバー**: `~/Dev/github-mcp-server/github-mcp-server`（GitHub公式、Go実装）
+- **トークン管理**: 1Password → macOS Keychain → MCPサーバー
+- **ラッパースクリプト**: `util-scripts/mcp-github.sh`（personal/work）
+
 ### MCPサーバーの種類
 
 1. **github-work**: 会社用GitHub Enterprise
    - 対象: `gh.iiji.jp`
    - ユーザー名: `juny-s`
-   - トークン: `op://Personal/GitHubEnt For MCP/token`
-   - ラッパー: `~/Scripts/Shell/run-github-mcp-work.sh`
+   - 1Password: `op://Personal/GitHubEnt For MCP/token`
+   - Keychain: `github-work-token`
+   - ラッパー: `util-scripts/mcp-github.sh work`
 
 2. **github-personal**: 個人用GitHub.com
    - 対象: `github.com`
    - ユーザー名: `switchdriven`
-   - トークン: `op://Personal/GitHub For MCP/token`
-   - ラッパー: `~/Scripts/Shell/run-github-mcp-personal.sh`
+   - 1Password: `op://Personal/GitHub For MCP/token`
+   - Keychain: `github-personal-token`
+   - ラッパー: `util-scripts/mcp-github.sh personal`
 
 ### MCP管理コマンド
 
@@ -202,15 +210,18 @@ MCPツールでエラーが発生した場合：
 
 ```
 util-scripts/
-├── setup-python-env.sh           # Python開発環境セットアップスクリプト
+├── mcp-github.sh                 # MCPサーバーラッパースクリプト
+├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
+├── setup-python-env.sh           # Python開発環境セットアップスクリプト（Bash版）
+├── setup-python-env.rb           # Python開発環境セットアップスクリプト（Ruby版）
+├── setup-ruby-env.rb             # Ruby開発環境セットアップスクリプト
 ├── check-python-env.sh           # Python仮想環境検索ツール
 ├── MCP_SETUP.md                  # MCP設定の詳細ドキュメント
 ├── CLAUDE.md                     # このファイル（プロジェクトガイド）
 └── README.md                     # プロジェクトREADME
 
-~/Scripts/Shell/
-├── run-github-mcp-work.sh        # 会社用GitHubラッパー
-└── run-github-mcp-personal.sh    # 個人用GitHubラッパー
+~/Dev/github-mcp-server/
+└── github-mcp-server             # GitHub公式MCPサーバー（Go実装）
 ```
 
 ## 開発ガイドライン
@@ -272,25 +283,32 @@ util-scripts/
 
 ### MCPサーバーが接続できない
 
-1. 1Password CLIが認証されているか確認:
+詳細な設定とトラブルシューティングについては[MCP_SETUP.md](MCP_SETUP.md)を参照してください。
+
+簡易チェックリスト：
+
+1. **Keychain にトークンが登録されているか確認**:
+   ```bash
+   security find-generic-password -s "github-personal-token"
+   ```
+
+2. **1Password CLI が認証されているか確認**:
    ```bash
    op account list
-   eval $(op signin)  # 必要に応じて
    ```
 
-2. トークンが読み込めるか確認:
+3. **ラッパースクリプトが実行可能か確認**:
    ```bash
-   op read "op://Personal/GitHubEnt For MCP/token"
+   ls -l ~/Dev/util-scripts/mcp-github.sh
+   # -rwxr-xr-x であることを確認
    ```
 
-3. ラッパースクリプトが実行可能か確認:
+4. **MCPサーバーが登録されているか確認**:
    ```bash
-   ls -l ~/Scripts/Shell/run-github-mcp-*.sh
+   claude mcp list
    ```
 
-4. Claude Codeを再起動
-
-詳細は[MCP_SETUP.md](MCP_SETUP.md)のトラブルシューティングセクションを参照してください。
+5. **Claude Code を再起動**: 設定変更後は必ず再起動してください
 
 ## スクリプトの使い方
 
