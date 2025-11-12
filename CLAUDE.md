@@ -119,7 +119,7 @@ Claude Codeはこのユーザー名を使ってMCP検索を行います。
 
 - **MCPサーバー**: `~/Dev/github-mcp-server/github-mcp-server`（GitHub公式、Go実装）
 - **トークン管理**: 1Password → macOS Keychain → MCPサーバー
-- **ラッパースクリプト**: `util-scripts/mcp-github.sh`（personal/work）
+- **ラッパースクリプト**: `~/Scripts/Shell/mcp-github-personal.sh` と `~/Scripts/Shell/mcp-github-work.sh`
 
 ### MCPサーバーの種類
 
@@ -128,14 +128,14 @@ Claude Codeはこのユーザー名を使ってMCP検索を行います。
    - ユーザー名: `juny-s`
    - 1Password: `op://Personal/GitHubEnt For MCP/token`
    - Keychain: `github-work-token`
-   - ラッパー: `util-scripts/mcp-github.sh work`
+   - ラッパー: `~/Scripts/Shell/mcp-github-work.sh`
 
 2. **github-personal**: 個人用GitHub.com
    - 対象: `github.com`
    - ユーザー名: `switchdriven`
    - 1Password: `op://Personal/GitHub For MCP/token`
    - Keychain: `github-personal-token`
-   - ラッパー: `util-scripts/mcp-github.sh personal`
+   - ラッパー: `~/Scripts/Shell/mcp-github-personal.sh`
 
 ### MCP管理コマンド
 
@@ -210,15 +210,18 @@ MCPツールでエラーが発生した場合：
 
 ```
 util-scripts/
-├── mcp-github.sh                 # MCPサーバーラッパースクリプト
 ├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
-├── setup-python-env.sh           # Python開発環境セットアップスクリプト（Bash版）
 ├── setup-python-env.rb           # Python開発環境セットアップスクリプト（Ruby版）
 ├── setup-ruby-env.rb             # Ruby開発環境セットアップスクリプト
 ├── check-python-env.sh           # Python仮想環境検索ツール
 ├── MCP_SETUP.md                  # MCP設定の詳細ドキュメント
 ├── CLAUDE.md                     # このファイル（プロジェクトガイド）
 └── README.md                     # プロジェクトREADME
+
+~/Scripts/Shell/
+├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
+├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
+└── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
 
 ~/Dev/github-mcp-server/
 └── github-mcp-server             # GitHub公式MCPサーバー（Go実装）

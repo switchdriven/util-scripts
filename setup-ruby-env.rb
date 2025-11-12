@@ -227,9 +227,9 @@ class SetupRubyEnv
     scripts_dir = File.expand_path("~/Scripts/Shell")
     case @mcp_config
     when "work"
-      ["#{scripts_dir}/run-github-mcp-work.sh", "github-work"]
+      ["#{scripts_dir}/mcp-github-work.sh", "github-work"]
     when "personal"
-      ["#{scripts_dir}/run-github-mcp-personal.sh", "github-personal"]
+      ["#{scripts_dir}/mcp-github-personal.sh", "github-personal"]
     end
   end
 
