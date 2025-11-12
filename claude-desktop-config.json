@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "github-personal": {
+      "command": "/Users/junya/Scripts/Shell/mcp-github-personal.sh",
+      "args": [],
+      "disabled": false,
+      "alwaysAllow": []
+    },
+    "github-work": {
+      "command": "/Users/junya/Scripts/Shell/mcp-github-work.sh",
+      "args": [],
+      "disabled": false,
+      "alwaysAllow": []
+    }
+  }
+}

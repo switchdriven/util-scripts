@@ -171,28 +171,17 @@ github-work: ~/Scripts/Shell/mcp-github-work.sh  - ✓ Connected
 
 ## Claude Desktop 設定
 
-Claude Desktop でもMCPサーバーを使用する場合は、`~/.claude/claude.json` を以下のように設定します：
+Claude Desktop でもMCPサーバーを使用する場合は、`~/Library/Application Support/Claude/claude.json` に設定を追加します。
 
-```json
-{
-  "mcpServers": {
-    "github-personal": {
-      "command": "/Users/junya/Scripts/Shell/mcp-github-personal.sh",
-      "args": [],
-      "disabled": false,
-      "alwaysAllow": []
-    },
-    "github-work": {
-      "command": "/Users/junya/Scripts/Shell/mcp-github-work.sh",
-      "args": [],
-      "disabled": false,
-      "alwaysAllow": []
-    }
-  }
-}
-```
+設定ファイルのサンプルは [claude-desktop-config.json](claude-desktop-config.json) を参照してください。
 
-設定後、Claude Desktop を再起動することで MCPサーバーが有効になります。
+基本的な手順：
+
+1. `claude-desktop-config.json` の内容を確認
+2. `~/Library/Application Support/Claude/claude.json` にコピー（既存ファイルがあれば `mcpServers` セクションをマージ）
+3. Claude Desktop を再起動
+
+**注意**: `~/Library/Application Support/Claude/` ディレクトリがない場合は、まず Claude Desktop を一度起動して作成してください。
 
 ## 動作確認
 
