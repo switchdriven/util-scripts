@@ -259,16 +259,18 @@ security find-generic-password -s "github-personal-token" -v
 
 ```
 util-scripts/
-├── mcp-github-setting.sh         # トークン同期スクリプト
+├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
+├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
+├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
 ├── setup-python-env.rb           # Python環境セットアップ（MCP対応）
 ├── setup-ruby-env.rb             # Ruby環境セットアップ（MCP対応）
 ├── MCP_SETUP.md                  # このファイル
 └── CLAUDE.md                     # プロジェクトガイド
 
 ~/Scripts/Shell/
-├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
-├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
-└── mcp-github-setting.sh         # トークン同期スクリプト（シンボリックリンク）
+├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用、util-scriptsへのコピー）
+├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用、util-scriptsへのコピー）
+└── mcp-github-setting.sh         # トークン同期スクリプト（util-scriptsへのコピー）
 
 ~/Dev/github-mcp-server/
 ├── github-mcp-server             # MCPサーバー本体

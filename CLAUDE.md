@@ -210,6 +210,8 @@ MCPツールでエラーが発生した場合：
 
 ```
 util-scripts/
+├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
+├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
 ├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
 ├── setup-python-env.rb           # Python開発環境セットアップスクリプト（Ruby版）
 ├── setup-ruby-env.rb             # Ruby開発環境セットアップスクリプト
@@ -219,9 +221,9 @@ util-scripts/
 └── README.md                     # プロジェクトREADME
 
 ~/Scripts/Shell/
-├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
-├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
-└── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
+├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用、シンボリックリンクまたはコピー）
+├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用、シンボリックリンクまたはコピー）
+└── mcp-github-setting.sh         # トークン同期スクリプト（シンボリックリンク）
 
 ~/Dev/github-mcp-server/
 └── github-mcp-server             # GitHub公式MCPサーバー（Go実装）
