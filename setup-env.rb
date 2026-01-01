@@ -480,6 +480,115 @@ class RubyStrategy
   end
 end
 
+# None strategy - for direnv/MCP setup only (no language-specific environment)
+# Useful for JXA, shell scripts, configuration files, etc.
+class NoneStrategy
+  include CommonHelpers
+  include LanguageStrategy
+
+  def language_name
+    "None (direnv/MCP setup only)"
+  end
+
+  def default_version
+    nil
+  end
+
+  def detect_existing_project?
+    false
+  end
+
+  def check_language_requirements
+    print_info "No language requirements ✓"
+  end
+
+  def create_venv(venv_dir, version)
+    # Nothing to do - no virtual environment needed
+  end
+
+  def setup_language_specific(venv_dir)
+    # No language-specific setup needed
+  end
+
+  def generate_venv_activation_line(venv_dir)
+    # No venv activation needed
+    ""
+  end
+
+  def create_project_files(project_dir, version)
+    create_readme_if_missing(project_dir)
+  end
+
+  def generate_gitignore(venv_dir)
+    <<~GITIGNORE
+      # IDEs
+      .vscode/
+      .idea/
+      *.swp
+      *.swo
+      *~
+
+      # OS
+      .DS_Store
+      .AppleDouble
+      .LSOverride
+
+      # Environment variables
+      .env
+      .env.local
+
+      # Logs
+      *.log
+
+      # Temporary files
+      *.tmp
+      *.bak
+      *.backup
+    GITIGNORE
+  end
+
+  def summary_next_steps
+    [
+      "Start coding!",
+      "Use direnv for environment variable management"
+    ]
+  end
+
+  private
+
+  def create_readme_if_missing(project_dir)
+    return if File.exist?("README.md")
+
+    return unless prompt_yes?("Do you want to create a basic README.md?")
+
+    project_name = File.basename(project_dir)
+    readme_content = <<~README
+      # #{project_name}
+
+      ## Setup
+
+      This project uses `direnv` for environment management.
+
+      ### Prerequisites
+
+      - [direnv](https://direnv.net/)
+
+      ### Installation
+
+      The environment is configured with direnv. Simply enter the directory and direnv will load the environment configuration.
+
+      ```bash
+      cd #{project_name}
+      # Environment is automatically loaded by direnv
+      ```
+
+    README
+
+    File.write("README.md", readme_content)
+    print_info "Created README.md ✓"
+  end
+end
+
 # Main setup orchestrator
 class SetupEnv
   include CommonHelpers
@@ -488,7 +597,8 @@ class SetupEnv
   MCP_CONFIGS = ["work", "personal"].freeze
   LANGUAGES = {
     "python" => PythonStrategy,
-    "ruby" => RubyStrategy
+    "ruby" => RubyStrategy,
+    "none" => NoneStrategy
   }.freeze
 
   def initialize
@@ -519,7 +629,7 @@ class SetupEnv
       opts.separator ""
       opts.separator "Sets up a development environment with direnv auto-activation."
       opts.separator ""
-      opts.separator "Supports: Python (uv), Ruby (Bundler)"
+      opts.separator "Supports: Python (uv), Ruby (Bundler), None (direnv/MCP only)"
       opts.separator ""
       opts.separator "OPTIONS:"
 
@@ -529,9 +639,9 @@ class SetupEnv
       end
 
       opts.on("-l", "--lang LANGUAGE", "--language LANGUAGE",
-              "Language to setup: 'python' or 'ruby'") do |l|
+              "Language to setup: 'python', 'ruby', or 'none'") do |l|
         unless LANGUAGES.key?(l.downcase)
-          print_error "Invalid language: #{l} (must be 'python' or 'ruby')"
+          print_error "Invalid language: #{l} (must be 'python', 'ruby', or 'none')"
           exit 1
         end
         @language = l.downcase
@@ -581,6 +691,7 @@ class SetupEnv
       opts.separator "  - direnv: Environment switcher (https://direnv.net/)"
       opts.separator "  - For Python: uv (https://github.com/astral-sh/uv)"
       opts.separator "  - For Ruby: Ruby 3.0+ with Bundler"
+      opts.separator "  - For None: Only direnv (useful for JXA, scripts, etc.)"
     end
 
     parser.parse!
@@ -620,7 +731,8 @@ class SetupEnv
     puts "Which language do you want to setup?"
     puts "  1) Python (with uv)"
     puts "  2) Ruby (with Bundler)"
-    print "Enter choice [1-2]: "
+    puts "  3) None (direnv/MCP setup only)"
+    print "Enter choice [1-3]: "
 
     choice = $stdin.gets
 
@@ -636,6 +748,8 @@ class SetupEnv
       "python"
     when "2"
       "ruby"
+    when "3"
+      "none"
     else
       print_error "Invalid choice: #{choice}"
       exit 1
