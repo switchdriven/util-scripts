@@ -7,6 +7,18 @@
 - **`~/Projects/` 以下**: 会社用アカウント（`juny-s` / `juny-s@iij.ad.jp`）を自動使用
 - **`~/Dev/` 以下**: 個人用アカウント（`switchdriven` / `junya.satoh@gmail.com`）を自動使用
 
+### MCP（Model Context Protocol）との連携
+
+このディレクトリ構造は、`setup-env.rb` の MCP 自動検出機能と連携しており、プロジェクトディレクトリに基づいて適切な GitHub アカウントが自動的に選択されます：
+
+- **`~/Projects/` 以下** → MCP は **work**（GitHub Enterprise `gh.iiji.jp`）に設定
+  - GitHubユーザー名: `juny-s`
+  - 環境変数: `GITHUB_USERNAME=juny-s`（.envrc で自動設定）
+
+- **`~/Dev/` 以下** → MCP は **personal**（GitHub.com）に設定
+  - GitHubユーザー名: `switchdriven`
+  - 環境変数: `GITHUB_USERNAME=switchdriven`（.envrc で自動設定）
+
 ## 使い方ガイド
 
 ### 基本的な使用方法

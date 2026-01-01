@@ -145,9 +145,27 @@ ls -la ~/Scripts/Shell/mcp-github-*.sh
 # -rwxr-xr-x であることを確認
 ```
 
-### ステップ 4: MCPサーバーを手動登録（必要な場合）
+### ステップ 4: setup-env.rb で自動設定（推奨）
 
-通常は `setup-python-env.rb --mcp personal` または `setup-python-env.rb --mcp work` でMCPサーバーが自動登録されます。
+`setup-env.rb` は MCP 設定をプロジェクトディレクトリに基づいて自動検出します：
+
+```bash
+# ~/Projects/ 配下 → 自動的に --mcp work が適用
+./setup-env.rb -l python ~/Projects/work-project
+
+# ~/Dev/ 配下 → 自動的に --mcp personal が適用
+./setup-env.rb -l python ~/Dev/personal-project
+
+# 明示的に MCP を指定することも可能
+./setup-env.rb -l python --mcp work ~/Projects/work-project
+./setup-env.rb -l python --mcp personal ~/Dev/personal-project
+```
+
+MCP 設定が自動検出され、MCPサーバーが自動登録されます。詳細は [CLAUDE.md](CLAUDE.md#setup-envrb) または `./setup-env.rb --help` を参照してください。
+
+### ステップ 6: MCPサーバーを手動登録（必要な場合）
+
+`setup-env.rb`、`setup-python-env.rb`、または `setup-ruby-env.rb` で `--mcp personal` または `--mcp work` オプションを使用すると自動登録されます。
 
 手動で登録する場合：
 
@@ -159,7 +177,7 @@ claude mcp add --transport stdio github-personal -- ~/Scripts/Shell/mcp-github-p
 claude mcp add --transport stdio github-work -- ~/Scripts/Shell/mcp-github-work.sh
 ```
 
-### ステップ 5: MCPサーバーが登録されているか確認
+### ステップ 7: MCPサーバーが登録されているか確認
 
 ```bash
 claude mcp list
@@ -261,14 +279,20 @@ security find-generic-password -s "github-personal-token" -v
 
 ### 複数アカウントの設定
 
-`setup-python-env.rb` でプロジェクトごとにMCP設定を指定できます：
+統合セットアップスクリプト `setup-env.rb`（推奨）またはプロジェクト言語に応じた専用スクリプトで、プロジェクトごとにMCP設定を指定できます：
 
 ```bash
-# 個人プロジェクト
-./setup-python-env.rb --mcp personal my-personal-project
+# 統合スクリプト（言語を自動検出または明示的に指定）
+./setup-env.rb --lang python --mcp personal my-personal-project
+./setup-env.rb --lang ruby --mcp work my-work-project
 
-# 会社プロジェクト
+# Python専用
+./setup-python-env.rb --mcp personal my-personal-project
 ./setup-python-env.rb --mcp work my-work-project
+
+# Ruby専用
+./setup-ruby-env.rb --mcp personal my-personal-project
+./setup-ruby-env.rb --mcp work my-work-project
 ```
 
 各プロジェクトの `.envrc` に `GITHUB_USERNAME` が自動設定されます。
@@ -277,11 +301,12 @@ security find-generic-password -s "github-personal-token" -v
 
 ```
 util-scripts/
+├── setup-env.rb                  # 統合開発環境セットアップ（推奨、MCP対応）
+├── setup-python-env.rb           # Python環境セットアップ（MCP対応）
+├── setup-ruby-env.rb             # Ruby環境セットアップ（MCP対応）
 ├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
 ├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
 ├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
-├── setup-python-env.rb           # Python環境セットアップ（MCP対応）
-├── setup-ruby-env.rb             # Ruby環境セットアップ（MCP対応）
 ├── MCP_SETUP.md                  # このファイル
 └── CLAUDE.md                     # プロジェクトガイド
 

@@ -8,26 +8,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 主な機能
 
-1. **setup-python-env.sh**: Python開発環境の自動セットアップ
+1. **setup-env.rb**: 統合開発環境セットアップスクリプト（推奨）
+   - Python と Ruby の両言語に対応
+   - 言語の自動検出または明示的指定が可能
+   - `uv`（Python）または `Bundler`（Ruby）での仮想環境の作成
+   - `direnv`による環境の自動アクティベーション
+   - Claude Code MCP (Model Context Protocol) サーバーの設定
+   - プロジェクト構造の初期化
+
+2. **setup-python-env.rb**: Python開発環境の専用セットアップスクリプト
    - `uv`を使ったPython仮想環境の作成
    - `direnv`による環境の自動アクティベーション
    - Claude Code MCP (Model Context Protocol) サーバーの設定
    - プロジェクト構造の初期化（pyproject.toml、README.md、.gitignoreなど）
 
-2. **check-python-env.sh**: Python仮想環境の検索・確認ツール
+3. **setup-ruby-env.rb**: Ruby開発環境の専用セットアップスクリプト
+   - Rubyの仮想環境を作成
+   - Bundlerによる依存関係管理
+   - `direnv`による環境の自動アクティベーション
+   - プロジェクト構造の初期化（Gemfile、README.md、.gitignoreなど）
+
+4. **check-python-env.sh**: Python仮想環境の検索・確認ツール
    - 指定ディレクトリ以下の全Python仮想環境を再帰的に検索
    - `uv`と`venv`/`virtualenv`の環境を自動判別
    - Pythonバージョンを表示
    - カラー出力で見やすく表示
 
-3. **llm-evaluator.py**: LLM速度ベンチマークツール
+5. **llm-evaluator.py**: LLM速度ベンチマークツール
    - OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価
    - OpenAI、LiteLLM、Ollama APIに対応
    - 複数プロンプトでのベンチマーク実行
    - トークン/秒、レスポンス時間などの詳細統計
    - 結果のJSONエクスポート機能
 
-4. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
+6. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
    - 1Password CLIを使った安全なトークン管理
    - ラッパースクリプトによるMCPサーバーの起動
 
@@ -58,42 +72,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 環境セットアップ
 
-#### 新規プロジェクトの作成
+#### 統合セットアップスクリプト（推奨）
+
+`setup-env.rb` は Python と Ruby の両方に対応し、言語を自動検出できます。
 
 ```bash
-# 基本的な使い方（MCPなし）
-./setup-python-env.sh my-project
+# 言語を明示的に指定する場合
+./setup-env.rb --lang python my-project
+./setup-env.rb --lang ruby my-project
 
-# 会社用GitHub MCPを設定
-./setup-python-env.sh --mcp work my-work-project
+# 短縮形
+./setup-env.rb -l python my-project
+./setup-env.rb -l ruby my-project
 
-# 個人用GitHub MCPを設定
-./setup-python-env.sh --mcp personal my-personal-project
+# バージョン指定
+./setup-env.rb --lang python --version 3.12 my-project
+./setup-env.rb --lang ruby --version 3.2 my-project
 
-# カスタムPythonバージョン
-./setup-python-env.sh --python-version 3.12 my-project
+# MCP設定（work または personal）
+./setup-env.rb --lang python --mcp work my-work-project
+./setup-env.rb --lang ruby --mcp personal my-project
 
-# カスタム仮想環境ディレクトリ
-./setup-python-env.sh --venv-dir .venv my-project
+# 既存プロジェクトに適用（言語自動検出）
+cd existing-project
+/path/to/setup-env.rb .
 ```
 
-#### 既存プロジェクトへのセットアップ
+#### 専用スクリプトを使用する場合
+
+Python専用またはRuby専用のセットアップが必要な場合：
 
 ```bash
-cd existing-project
-/path/to/setup-python-env.sh --mcp work .
+# Python専用
+./setup-python-env.rb --version 3.12 my-project
+./setup-python-env.rb --mcp work my-work-project
+
+# Ruby専用
+./setup-ruby-env.rb --version 3.2 my-project
+./setup-ruby-env.rb --mcp personal my-project
 ```
 
 #### 仮想環境のアクティベーション
 
-ディレクトリに入ると、`direnv`が自動的にPython仮想環境をアクティベートします。
+ディレクトリに入ると、`direnv`が自動的に仮想環境をアクティベートします。
 
 ```bash
 cd my-project
 # 自動的に仮想環境がアクティベートされる
 
 # 必要に応じて手動でアクティベート
-source .venv/bin/activate
+source .venv/bin/activate          # Python
+source .venv/bin/activate.sh       # Ruby
 ```
 
 ## MCP（Model Context Protocol）設定
@@ -210,12 +239,14 @@ MCPツールでエラーが発生した場合：
 
 ```
 util-scripts/
+├── setup-env.rb                  # 統合開発環境セットアップスクリプト（推奨）
+├── setup-python-env.rb           # Python開発環境セットアップスクリプト（専用）
+├── setup-ruby-env.rb             # Ruby開発環境セットアップスクリプト（専用）
+├── check-python-env.sh           # Python仮想環境検索ツール
+├── llm-evaluator.py              # LLM速度ベンチマークツール
 ├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
 ├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
 ├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
-├── setup-python-env.rb           # Python開発環境セットアップスクリプト（Ruby版）
-├── setup-ruby-env.rb             # Ruby開発環境セットアップスクリプト
-├── check-python-env.sh           # Python仮想環境検索ツール
 ├── MCP_SETUP.md                  # MCP設定の詳細ドキュメント
 ├── CLAUDE.md                     # このファイル（プロジェクトガイド）
 └── README.md                     # プロジェクトREADME
@@ -317,6 +348,53 @@ util-scripts/
 
 ## スクリプトの使い方
 
+### setup-env.rb
+
+統合開発環境セットアップスクリプトです。Python と Ruby の両方に対応し、言語を自動検出します。
+
+```bash
+# 基本的な使い方（言語を明示的に指定）
+./setup-env.rb --lang python my-project
+./setup-env.rb --lang ruby my-project
+
+# 短縮形
+./setup-env.rb -l python my-project
+./setup-env.rb -l ruby my-project
+
+# バージョン指定
+./setup-env.rb -l python -v 3.12 my-project
+./setup-env.rb -l ruby -v 3.2 my-project
+
+# MCP設定（明示的に指定）
+./setup-env.rb --lang python --mcp work my-work-project
+./setup-env.rb --lang ruby --mcp personal my-project
+
+# 既存プロジェクト（言語自動検出）
+cd existing-project
+/path/to/setup-env.rb .
+
+# MCP自動検出（ディレクトリベース）
+./setup-env.rb -l python ~/Projects/work-project    # 自動的に --mcp work が適用
+./setup-env.rb -l python ~/Dev/personal-project     # 自動的に --mcp personal が適用
+
+# カスタム仮想環境ディレクトリ
+./setup-env.rb -l python --venv-dir .venv-custom my-project
+
+# ヘルプを表示
+./setup-env.rb --help
+```
+
+**機能**:
+- **言語の自動検出**: `pyproject.toml` で Python、`Gemfile` で Ruby を自動検出
+- **MCP の自動検出**: プロジェクトディレクトリに基づいて自動的に MCP 設定を推測
+  - `~/Projects/*` → work（GitHub Enterprise）
+  - `~/Dev/*` → personal（GitHub.com）
+  - その他のディレクトリ → MCP 設定なし
+- **MCP 衝突検出**: 明示的に指定した MCP がディレクトリ推測と異なる場合、警告を表示
+- **非対話モード対応**: CI/自動化環境で言語選択をスキップ（デフォルトは Python）
+- **言語固有のファイル構造を自動生成**: pyproject.toml、Gemfile、README.md、.gitignoreなど
+- **direnv 設定と MCP 統合に対応**
+
 ### check-python-env.sh
 
 Python仮想環境を検索・確認するツールです。
@@ -391,7 +469,9 @@ uv pip install -r requirements.txt
 
 ## 参考資料
 
-- [setup-python-env.sh使い方](./setup-python-env.sh) - `--help`オプションで詳細を確認
+- [setup-env.rb使い方](./setup-env.rb) - `--help`オプションで詳細を確認（推奨）
+- [setup-python-env.rb使い方](./setup-python-env.rb) - `--help`オプションで詳細を確認
+- [setup-ruby-env.rb使い方](./setup-ruby-env.rb) - `--help`オプションで詳細を確認
 - [check-python-env.sh使い方](./check-python-env.sh) - `--help`オプションで詳細を確認
 - [llm-evaluator.py使い方](./llm-evaluator.py) - `--help`オプションで詳細を確認
 - [MCP設定ガイド](./MCP_SETUP.md) - MCPの詳細な設定とトラブルシューティング

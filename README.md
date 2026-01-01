@@ -4,38 +4,56 @@
 
 ## 主な機能
 
-### setup-ruby-env.rb
+### 🌟 setup-env.rb（推奨）
 
-Ruby開発環境を自動でセットアップするスクリプトです。
+統合開発環境セットアップスクリプストです。Python と Ruby の両方に対応し、言語を自動検出します。
 
-- Bundlerを使ったRubyプロジェクト管理
+- **Python と Ruby の両方に対応**
+- **言語の自動検出機能**（pyproject.toml や Gemfile から自動判別）
+- `uv`（Python）または `Bundler`（Ruby）での仮想環境管理
 - `direnv`による環境の自動アクティベーション
 - Claude Code MCP (Model Context Protocol) サーバーの設定
-- プロジェクト構造の初期化（Gemfile、README.md、.gitignoreなど）
-- Bash版より可読性の高いRuby実装
+- 言語固有のプロジェクト構造を自動初期化
 
 #### 使い方
 
 ```bash
-# 基本的な使い方（MCPなし）
-./setup-ruby-env.rb my-project
+# 言語を明示的に指定
+./setup-env.rb --lang python my-project
+./setup-env.rb --lang ruby my-project
 
-# 会社用GitHub MCPを設定
-./setup-ruby-env.rb --mcp work my-work-project
+# 短縮形
+./setup-env.rb -l python my-project
+./setup-env.rb -l ruby my-project
 
-# 個人用GitHub MCPを設定
-./setup-ruby-env.rb --mcp personal my-personal-project
+# バージョン指定
+./setup-env.rb -l python -v 3.12 my-project
+./setup-env.rb -l ruby -v 3.2 my-project
 
-# Ruby バージョンを指定
-./setup-ruby-env.rb --ruby-version 3.2 my-project
+# MCP設定（明示的に指定）
+./setup-env.rb -l python --mcp work my-work-project
+./setup-env.rb -l ruby --mcp personal my-project
+
+# 既存プロジェクト（言語自動検出）
+cd existing-project
+/path/to/setup-env.rb .
+
+# MCP自動検出（ディレクトリベース）
+./setup-env.rb -l python ~/Projects/work-project    # 自動的に --mcp work が適用
+./setup-env.rb -l python ~/Dev/personal-project     # 自動的に --mcp personal が適用
 
 # ヘルプの表示
-./setup-ruby-env.rb --help
+./setup-env.rb --help
 ```
 
-### setup-python-env.rb
+**機能**:
+- **言語の自動検出**: `pyproject.toml` で Python、`Gemfile` で Ruby を自動検出
+- **MCP の自動検出**: `~/Projects/*` で work、`~/Dev/*` で personal を自動検出
+- **非対話モード対応**: CI/自動化環境で言語選択をスキップ（デフォルトは Python）
 
-Python開発環境を自動でセットアップするスクリプトです。Ruby実装版で可読性が高いコード。
+### setup-python-env.rb（Python専用）
+
+Python開発環境を自動でセットアップするスクリプトです。
 
 - `uv`を使ったPython仮想環境の作成
 - `direnv`による環境の自動アクティベーション
@@ -45,20 +63,42 @@ Python開発環境を自動でセットアップするスクリプトです。Ru
 #### 使い方
 
 ```bash
-# 基本的な使い方（MCPなし）
+# 基本的な使い方
 ./setup-python-env.rb my-project
-
-# 会社用GitHub MCPを設定
-./setup-python-env.rb --mcp work my-work-project
-
-# 個人用GitHub MCPを設定
-./setup-python-env.rb --mcp personal my-personal-project
 
 # Pythonバージョンを指定
 ./setup-python-env.rb --python-version 3.12 my-project
 
+# MCP設定
+./setup-python-env.rb --mcp work my-work-project
+
 # ヘルプの表示
 ./setup-python-env.rb --help
+```
+
+### setup-ruby-env.rb（Ruby専用）
+
+Ruby開発環境を自動でセットアップするスクリプトです。
+
+- Bundlerを使ったRubyプロジェクト管理
+- `direnv`による環境の自動アクティベーション
+- Claude Code MCP (Model Context Protocol) サーバーの設定
+- プロジェクト構造の初期化（Gemfile、README.md、.gitignoreなど）
+
+#### 使い方
+
+```bash
+# 基本的な使い方
+./setup-ruby-env.rb my-project
+
+# Ruby バージョンを指定
+./setup-ruby-env.rb --ruby-version 3.2 my-project
+
+# MCP設定
+./setup-ruby-env.rb --mcp work my-work-project
+
+# ヘルプの表示
+./setup-ruby-env.rb --help
 ```
 
 ### setup-python-env.sh（レガシー版）
