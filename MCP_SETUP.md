@@ -150,16 +150,26 @@ ls -la ~/Scripts/Shell/mcp-github-*.sh
 `setup-env.rb` は MCP 設定をプロジェクトディレクトリに基づいて自動検出します：
 
 ```bash
-# ~/Projects/ 配下 → 自動的に --mcp work が適用
+# ~/Projects/ 配下 → 自動的に --mcp work が適用（Python）
 ./setup-env.rb -l python ~/Projects/work-project
 
-# ~/Dev/ 配下 → 自動的に --mcp personal が適用
-./setup-env.rb -l python ~/Dev/personal-project
+# ~/Dev/ 配下 → 自動的に --mcp personal が適用（Ruby）
+./setup-env.rb -l ruby ~/Dev/personal-project
+
+# 言語なし（direnv/MCP のみ）の場合も対応
+./setup-env.rb -l none ~/Projects/jxa-project       # 自動的に --mcp work が適用
 
 # 明示的に MCP を指定することも可能
 ./setup-env.rb -l python --mcp work ~/Projects/work-project
-./setup-env.rb -l python --mcp personal ~/Dev/personal-project
+./setup-env.rb -l ruby --mcp personal ~/Dev/personal-project
+./setup-env.rb -l none --mcp work ~/Projects/jxa-project
 ```
+
+**None 言語での使用例** (`--lang none`):
+- JXA（JavaScript for Automation）プロジェクト
+- シェルスクリプト専用プロジェクト
+- 言語環境が不要で direnv と MCP のセットアップだけが必要な場合
+- このような場合でも MCP の自動検出が機能します
 
 MCP 設定が自動検出され、MCPサーバーが自動登録されます。詳細は [CLAUDE.md](CLAUDE.md#setup-envrb) または `./setup-env.rb --help` を参照してください。
 
@@ -285,6 +295,7 @@ security find-generic-password -s "github-personal-token" -v
 # 統合スクリプト（言語を自動検出または明示的に指定）
 ./setup-env.rb --lang python --mcp personal my-personal-project
 ./setup-env.rb --lang ruby --mcp work my-work-project
+./setup-env.rb --lang none --mcp work my-jxa-work-project
 
 # Python専用
 ./setup-python-env.rb --mcp personal my-personal-project
@@ -293,6 +304,10 @@ security find-generic-password -s "github-personal-token" -v
 # Ruby専用
 ./setup-ruby-env.rb --mcp personal my-personal-project
 ./setup-ruby-env.rb --mcp work my-work-project
+
+# None言語（direnv/MCP のみ）
+./setup-env.rb --lang none --mcp personal my-jxa-personal-project
+./setup-env.rb --lang none --mcp work my-jxa-work-project
 ```
 
 各プロジェクトの `.envrc` に `GITHUB_USERNAME` が自動設定されます。

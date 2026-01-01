@@ -6,14 +6,15 @@
 
 ### 🌟 setup-env.rb（推奨）
 
-統合開発環境セットアップスクリプストです。Python と Ruby の両方に対応し、言語を自動検出します。
+統合開発環境セットアップスクリプストです。Python、Ruby、または言語なし（direnv/MCP のみ）に対応し、言語を自動検出します。
 
-- **Python と Ruby の両方に対応**
+- **Python、Ruby、None の3つの言語に対応**
 - **言語の自動検出機能**（pyproject.toml や Gemfile から自動判別）
 - `uv`（Python）または `Bundler`（Ruby）での仮想環境管理
 - `direnv`による環境の自動アクティベーション
 - Claude Code MCP (Model Context Protocol) サーバーの設定
 - 言語固有のプロジェクト構造を自動初期化
+- **direnv/MCP のみが必要なプロジェクトに対応**（JXA、シェルスクリプト専用プロジェクトなど）
 
 #### 使い方
 
@@ -21,10 +22,12 @@
 # 言語を明示的に指定
 ./setup-env.rb --lang python my-project
 ./setup-env.rb --lang ruby my-project
+./setup-env.rb --lang none my-jxa-project         # direnv/MCP のみ
 
 # 短縮形
 ./setup-env.rb -l python my-project
 ./setup-env.rb -l ruby my-project
+./setup-env.rb -l none my-jxa-project
 
 # バージョン指定
 ./setup-env.rb -l python -v 3.12 my-project
@@ -33,6 +36,7 @@
 # MCP設定（明示的に指定）
 ./setup-env.rb -l python --mcp work my-work-project
 ./setup-env.rb -l ruby --mcp personal my-project
+./setup-env.rb -l none --mcp work my-jxa-work-project
 
 # 既存プロジェクト（言語自動検出）
 cd existing-project
@@ -41,14 +45,16 @@ cd existing-project
 # MCP自動検出（ディレクトリベース）
 ./setup-env.rb -l python ~/Projects/work-project    # 自動的に --mcp work が適用
 ./setup-env.rb -l python ~/Dev/personal-project     # 自動的に --mcp personal が適用
+./setup-env.rb -l none ~/Projects/jxa-project       # 自動的に --mcp work が適用
 
 # ヘルプの表示
 ./setup-env.rb --help
 ```
 
 **機能**:
-- **言語の自動検出**: `pyproject.toml` で Python、`Gemfile` で Ruby を自動検出
+- **言語の自動検出**: `pyproject.toml` で Python、`Gemfile` で Ruby、マーカーファイルなしで対話的に選択
 - **MCP の自動検出**: `~/Projects/*` で work、`~/Dev/*` で personal を自動検出
+- **None 言語対応**: `--lang none` で direnv と MCP のセットアップのみ（言語環境不要なプロジェクト向け）
 - **非対話モード対応**: CI/自動化環境で言語選択をスキップ（デフォルトは Python）
 
 ### setup-python-env.rb（Python専用）

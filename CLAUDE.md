@@ -9,12 +9,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 主な機能
 
 1. **setup-env.rb**: 統合開発環境セットアップスクリプト（推奨）
-   - Python と Ruby の両言語に対応
+   - Python、Ruby、None（言語なし）の3つに対応
    - 言語の自動検出または明示的指定が可能
    - `uv`（Python）または `Bundler`（Ruby）での仮想環境の作成
    - `direnv`による環境の自動アクティベーション
    - Claude Code MCP (Model Context Protocol) サーバーの設定
    - プロジェクト構造の初期化
+   - **None 言語**: JXA（JavaScript for Automation）やシェルスクリプト専用プロジェクトに対応
 
 2. **setup-python-env.rb**: Python開発環境の専用セットアップスクリプト
    - `uv`を使ったPython仮想環境の作成
@@ -74,16 +75,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 #### 統合セットアップスクリプト（推奨）
 
-`setup-env.rb` は Python と Ruby の両方に対応し、言語を自動検出できます。
+`setup-env.rb` は Python、Ruby、None の3つの言語に対応し、言語を自動検出できます。
 
 ```bash
 # 言語を明示的に指定する場合
 ./setup-env.rb --lang python my-project
 ./setup-env.rb --lang ruby my-project
+./setup-env.rb --lang none my-jxa-project        # JXA/シェルスクリプト専用
 
 # 短縮形
 ./setup-env.rb -l python my-project
 ./setup-env.rb -l ruby my-project
+./setup-env.rb -l none my-jxa-project
 
 # バージョン指定
 ./setup-env.rb --lang python --version 3.12 my-project
@@ -92,11 +95,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # MCP設定（work または personal）
 ./setup-env.rb --lang python --mcp work my-work-project
 ./setup-env.rb --lang ruby --mcp personal my-project
+./setup-env.rb --lang none --mcp work my-jxa-work-project
 
 # 既存プロジェクトに適用（言語自動検出）
 cd existing-project
 /path/to/setup-env.rb .
+
+# MCP自動検出（ディレクトリベース）
+./setup-env.rb -l python ~/Projects/work-project    # 自動的に --mcp work が適用
+./setup-env.rb -l python ~/Dev/personal-project     # 自動的に --mcp personal が適用
+./setup-env.rb -l none ~/Projects/jxa-project       # 自動的に --mcp work が適用
 ```
+
+**None 言語の用途**:
+- JXA（JavaScript for Automation）プロジェクト
+- シェルスクリプト専用プロジェクト
+- 言語環境が不要で direnv と MCP のセットアップだけが必要な場合
 
 #### 専用スクリプトを使用する場合
 
