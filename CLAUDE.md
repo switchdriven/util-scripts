@@ -9,48 +9,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 主な機能
 
 1. **setup-env.rb**: 統合開発環境セットアップスクリプト（推奨）
-   - Python、Ruby、None（言語なし）の3つに対応
-   - 言語の自動検出または明示的指定が可能
-   - `uv`（Python）または `Bundler`（Ruby）での仮想環境の作成
-   - `direnv`による環境の自動アクティベーション
-   - Claude Code MCP (Model Context Protocol) サーバーの設定
-   - プロジェクト構造の初期化
-   - **None 言語**: JXA（JavaScript for Automation）やシェルスクリプト専用プロジェクトに対応
+   - Python、Ruby、None（言語なし）の3つの言語に対応
+   - 言語の自動検出と `direnv`、MCP サーバーの自動セットアップ
+   - **None 言語**: JXA や シェルスクリプト専用プロジェクト向け
 
-2. **setup-python-env.rb**: Python開発環境の専用セットアップスクリプト
-   - `uv`を使ったPython仮想環境の作成
-   - `direnv`による環境の自動アクティベーション
-   - Claude Code MCP (Model Context Protocol) サーバーの設定
-   - プロジェクト構造の初期化（pyproject.toml、README.md、.gitignoreなど）
+2. **check-python-env.sh**: Python仮想環境の検索・確認ツール
+   - 指定ディレクトリ以下の全仮想環境を再帰的に検索・判別
 
-3. **setup-ruby-env.rb**: Ruby開発環境の専用セットアップスクリプト
-   - Rubyの仮想環境を作成
-   - Bundlerによる依存関係管理
-   - `direnv`による環境の自動アクティベーション
-   - プロジェクト構造の初期化（Gemfile、README.md、.gitignoreなど）
+3. **llm-evaluator.py**: LLM速度ベンチマークツール
+   - OpenAI、LiteLLM、Ollama API の トークン生成速度を評価
 
-4. **check-python-env.sh**: Python仮想環境の検索・確認ツール
-   - 指定ディレクトリ以下の全Python仮想環境を再帰的に検索
-   - `uv`と`venv`/`virtualenv`の環境を自動判別
-   - Pythonバージョンを表示
-   - カラー出力で見やすく表示
-
-5. **llm-evaluator.py**: LLM速度ベンチマークツール
-   - OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価
-   - OpenAI、LiteLLM、Ollama APIに対応
-   - 複数プロンプトでのベンチマーク実行
-   - トークン/秒、レスポンス時間などの詳細統計
-   - 結果のJSONエクスポート機能
-
-6. **migrate-mcp-to-local.rb**: MCP設定をグローバルからプロジェクトローカルに移行するツール
-   - 既存プロジェクトのグローバル MCP 設定を `.mcp.json` に変換
-   - ドライランモードで変更をプレビュー可能
-   - `.gitignore` を自動で更新
-
-7. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
-   - 1Password CLIを使った安全なトークン管理
-   - ラッパースクリプトによるMCPサーバーの起動
-   - プロジェクトローカルの `.mcp.json` で管理（バージョン管理対象）
+4. **MCP設定**: GitHub（個人用・会社用）と Perplexity AI の統合
+   - 1Password で管理したトークンを Keychain 経由で MCP サーバーに提供
+   - プロジェクトローカルの `.mcp.json` で MCP サーバー設定
 
 ## 開発環境
 
@@ -113,25 +84,6 @@ cd existing-project
 ./setup-env.rb -l none ~/Projects/jxa-project       # 自動的に --mcp work が適用
 ```
 
-**None 言語の用途**:
-- JXA（JavaScript for Automation）プロジェクト
-- シェルスクリプト専用プロジェクト
-- 言語環境が不要で direnv と MCP のセットアップだけが必要な場合
-
-#### 専用スクリプトを使用する場合
-
-Python専用またはRuby専用のセットアップが必要な場合：
-
-```bash
-# Python専用
-./setup-python-env.rb --version 3.12 my-project
-./setup-python-env.rb --mcp work my-work-project
-
-# Ruby専用
-./setup-ruby-env.rb --version 3.2 my-project
-./setup-ruby-env.rb --mcp personal my-project
-```
-
 #### 仮想環境のアクティベーション
 
 ディレクトリに入ると、`direnv`が自動的に仮想環境をアクティベートします。
@@ -161,8 +113,8 @@ source .venv/bin/activate.sh       # Ruby
   - MCPサーバー名: `github-personal`
   - 環境変数: `GITHUB_USERNAME=switchdriven`（`.envrc`で自動設定）
 
-`setup-python-env.sh`でMCP設定を指定すると、`.envrc`に自動的にGitHubユーザー名が設定されます。
-Claude Codeはこのユーザー名を使ってMCP検索を行います。
+`setup-env.rb` で MCP 設定を指定すると、`.envrc` に自動的に GitHub ユーザー名が設定されます。
+Claude Code はこのユーザー名を使ってMCP検索を行います。
 
 ### MCPサーバーの実装
 
@@ -199,16 +151,13 @@ API トークンは 1Password で管理し、`mcp-keychain-setting.sh` スクリ
 
 #### トークンの初期化
 
-以下のコマンドで 1Password のトークンを Keychain に同期します：
+1Password のトークンを Keychain に同期：
 
 ```bash
 ./mcp-keychain-setting.sh
 ```
 
-実行内容：
-- GitHub（personal・work）のトークンを Keychain に格納
-- Perplexity API キーを Keychain に格納
-- 各トークンを検証して正常に格納されたか確認
+GitHub（personal・work）と Perplexity のトークンを一括で Keychain に格納・検証します。
 
 #### 手動でのトークン設定
 
@@ -246,9 +195,7 @@ security find-generic-password -w -s "perplexity-token"
 
 ### プロジェクトローカルMCP設定
 
-`setup-env.rb` で MCP を設定すると、プロジェクトルートに `.mcp.json` ファイルが自動生成されます。
-
-#### `.mcp.json` の構造
+`setup-env.rb` で MCP を設定すると、プロジェクトルートに `.mcp.json` が自動生成されます。
 
 ```json
 {
@@ -262,79 +209,9 @@ security find-generic-password -w -s "perplexity-token"
 }
 ```
 
-**重要なポイント**:
-- ファイルは **プロジェクトルート** に配置（`.claude/` 直下ではない）
-- `.mcp.json` は **git にコミット** すべき（プロジェクト設定）
-- `.claude/` ディレクトリ は **.gitignore に含める**（ユーザー固有の権限設定）
-
-#### 新規プロジェクトでの自動設定
-
-```bash
-# MCP設定を明示的に指定
-./setup-env.rb --lang python --mcp personal my-project
-
-# またはディレクトリベースの自動検出
-./setup-env.rb -l python ~/Dev/my-personal-project     # personal が自動選択
-./setup-env.rb -l python ~/Projects/my-work-project    # work が自動選択
-```
-
-結果：プロジェクトルートに `.mcp.json` が生成されます。
-
-#### 既存プロジェクトの移行
-
-既に MCP が グローバルに設定されているプロジェクトをプロジェクトローカル設定に移行するには、`migrate-mcp-to-local.rb` を使用します。
-
-```bash
-# ドライランモード（変更をプレビュー）
-./migrate-mcp-to-local.rb --mcp personal --dry-run ~/Dev/old-project
-
-# 実際に移行を実行
-./migrate-mcp-to-local.rb --mcp personal ~/Dev/old-project
-```
-
-**実行例**:
-```bash
-$ ./migrate-mcp-to-local.rb --mcp personal ~/Dev/apple-scripts
-[INFO] Creating new .mcp.json
-[INFO] Created .mcp.json with 'github-personal' server ✓
-[INFO] .gitignore already up to date ✓
-
-============================================================
-Migration complete! ✓
-============================================================
-
-Project: /Users/junya/Dev/apple-scripts
-MCP Type: personal
-
-Next steps:
-  1. Review .mcp.json in your project root:
-     cat /Users/junya/Dev/apple-scripts/.mcp.json
-
-  2. Commit .mcp.json to version control:
-     cd /Users/junya/Dev/apple-scripts
-     git add .mcp.json .gitignore
-     git commit -m 'feat: add project-local MCP configuration'
-
-  3. (Optional) Remove global MCP registration:
-     claude mcp remove github-personal -s local
-
-  4. Test Claude Code in this project to verify MCP works
-```
-
-### MCP管理コマンド
-
-```bash
-# MCPサーバー一覧の確認
-claude mcp list
-
-# 特定のMCPサーバーの詳細確認
-claude mcp get github-work
-
-# MCPサーバーの削除（グローバル登録の場合）
-claude mcp remove github-work -s local
-```
-
-**注意**: `setup-env.rb` で生成される `.mcp.json` はプロジェクトローカルなため、`claude mcp` コマンドで削除する必要がありません。プロジェクトから削除する場合は単に `.mcp.json` をファイルから削除してください。
+**重要**:
+- `.mcp.json` はプロジェクトルートに配置（git コミット対象）
+- `.claude/` は `.gitignore` に含める
 
 ### 詳細なMCP設定
 
@@ -588,61 +465,6 @@ Found 2 environments: 1 uv, 1 venv
 - Pythonバージョンを自動検出（`pyvenv.cfg`から読み取り）
 - サマリーで環境タイプごとの数を表示
 
-### migrate-mcp-to-local.rb
-
-グローバル MCP 設定をプロジェクトローカルの `.mcp.json` に移行するツールです。既存プロジェクトを新しい設定方式に移行する際に使用します。
-
-```bash
-# 基本的な使い方（実行前にドライランで確認）
-./migrate-mcp-to-local.rb --mcp personal --dry-run ~/Dev/old-project
-
-# 実際に移行を実行
-./migrate-mcp-to-local.rb --mcp personal ~/Dev/old-project
-
-# 会社用プロジェクトを移行
-./migrate-mcp-to-local.rb --mcp work ~/Projects/work-project
-
-# ヘルプを表示
-./migrate-mcp-to-local.rb --help
-```
-
-**機能**:
-- プロジェクトディレクトリから既存 MCP 設定を自動検出
-- `.mcp.json` をプロジェクトルートに自動生成
-- `.gitignore` を自動で更新（`.claude/` を除外）
-- ドライランモード（`--dry-run`）で変更をプレビュー可能
-- わかりやすいサマリーと次のステップを表示
-- エラーハンドリング機能（カラーコード付き）
-
-**出力例**:
-```bash
-$ ./migrate-mcp-to-local.rb --mcp personal ~/Dev/apple-scripts
-[INFO] Creating new .mcp.json
-[INFO] Created .mcp.json with 'github-personal' server ✓
-[INFO] .gitignore already up to date ✓
-
-============================================================
-Migration complete! ✓
-============================================================
-
-Project: /Users/junya/Dev/apple-scripts
-MCP Type: personal
-
-Next steps:
-  1. Review .mcp.json in your project root:
-     cat /Users/junya/Dev/apple-scripts/.mcp.json
-
-  2. Commit .mcp.json to version control:
-     cd /Users/junya/Dev/apple-scripts
-     git add .mcp.json .gitignore
-     git commit -m 'feat: add project-local MCP configuration'
-
-  3. (Optional) Remove global MCP registration:
-     claude mcp remove github-personal -s local
-
-  4. Test Claude Code in this project to verify MCP works
-```
-
 ### llm-evaluator.py
 
 OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価するツールです。
@@ -682,13 +504,10 @@ uv pip install -r requirements.txt
 
 ## 参考資料
 
-- [setup-env.rb使い方](./setup-env.rb) - `--help`オプションで詳細を確認（推奨）
-- [setup-python-env.rb使い方](./setup-python-env.rb) - `--help`オプションで詳細を確認
-- [setup-ruby-env.rb使い方](./setup-ruby-env.rb) - `--help`オプションで詳細を確認
-- [check-python-env.sh使い方](./check-python-env.sh) - `--help`オプションで詳細を確認
-- [migrate-mcp-to-local.rb使い方](./migrate-mcp-to-local.rb) - `--help`オプションで詳細を確認
-- [llm-evaluator.py使い方](./llm-evaluator.py) - `--help`オプションで詳細を確認
-- [MCP設定ガイド](./MCP_SETUP.md) - MCPの詳細な設定とトラブルシューティング
-- [uv公式ドキュメント](https://github.com/astral-sh/uv)
-- [direnv公式ドキュメント](https://direnv.net/)
+- [setup-env.rb](./setup-env.rb) - `--help` で詳細を確認
+- [check-python-env.sh](./check-python-env.sh) - `--help` で詳細を確認
+- [llm-evaluator.py](./llm-evaluator.py) - `--help` で詳細を確認
+- [MCP_SETUP.md](./MCP_SETUP.md) - MCP の詳細設定とトラブルシューティング
+- [uv 公式ドキュメント](https://github.com/astral-sh/uv)
+- [direnv 公式ドキュメント](https://direnv.net/)
 - [Claude Code MCP](https://docs.claude.com/en/docs/claude-code/mcp)
