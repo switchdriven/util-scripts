@@ -42,9 +42,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - トークン/秒、レスポンス時間などの詳細統計
    - 結果のJSONエクスポート機能
 
-6. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
+6. **migrate-mcp-to-local.rb**: MCP設定をグローバルからプロジェクトローカルに移行するツール
+   - 既存プロジェクトのグローバル MCP 設定を `.mcp.json` に変換
+   - ドライランモードで変更をプレビュー可能
+   - `.gitignore` を自動で更新
+
+7. **MCP設定**: GitHub Enterprise（会社用）とGitHub.com（個人用）のMCPサーバー設定
    - 1Password CLIを使った安全なトークン管理
    - ラッパースクリプトによるMCPサーバーの起動
+   - プロジェクトローカルの `.mcp.json` で管理（バージョン管理対象）
 
 ## 開発環境
 
@@ -163,6 +169,7 @@ Claude Codeはこのユーザー名を使ってMCP検索を行います。
 - **MCPサーバー**: `~/Dev/github-mcp-server/github-mcp-server`（GitHub公式、Go実装）
 - **トークン管理**: 1Password → macOS Keychain → MCPサーバー
 - **ラッパースクリプト**: `~/Scripts/Shell/mcp-github-personal.sh` と `~/Scripts/Shell/mcp-github-work.sh`
+- **設定管理**: プロジェクトローカルの `.mcp.json` ファイル（バージョン管理対象）
 
 ### MCPサーバーの種類
 
@@ -180,6 +187,140 @@ Claude Codeはこのユーザー名を使ってMCP検索を行います。
    - Keychain: `github-personal-token`
    - ラッパー: `~/Scripts/Shell/mcp-github-personal.sh`
 
+3. **perplexity**: Perplexity AI
+   - サービス: Perplexity API
+   - 1Password: `op://Personal/Perplexity API/credential`
+   - Keychain: `perplexity-token`
+   - ラッパー: `~/Scripts/Shell/mcp-perplexity.sh`
+
+### Keychain トークン管理
+
+API トークンは 1Password で管理し、`mcp-keychain-setting.sh` スクリプトで Keychain に同期しています。
+
+#### トークンの初期化
+
+以下のコマンドで 1Password のトークンを Keychain に同期します：
+
+```bash
+./mcp-keychain-setting.sh
+```
+
+実行内容：
+- GitHub（personal・work）のトークンを Keychain に格納
+- Perplexity API キーを Keychain に格納
+- 各トークンを検証して正常に格納されたか確認
+
+#### 手動でのトークン設定
+
+Keychain に直接トークンを設定することも可能です：
+
+```bash
+# GitHub personal
+security add-generic-password \
+  -s "github-personal-token" \
+  -a "$(whoami)" \
+  -w "YOUR_GITHUB_PERSONAL_TOKEN"
+
+# GitHub work
+security add-generic-password \
+  -s "github-work-token" \
+  -a "$(whoami)" \
+  -w "YOUR_GITHUB_WORK_TOKEN"
+
+# Perplexity
+security add-generic-password \
+  -s "perplexity-token" \
+  -a "$(whoami)" \
+  -w "YOUR_PERPLEXITY_API_KEY"
+```
+
+#### トークンの確認
+
+Keychain に格納されたトークンを確認します：
+
+```bash
+security find-generic-password -w -s "github-personal-token"
+security find-generic-password -w -s "github-work-token"
+security find-generic-password -w -s "perplexity-token"
+```
+
+### プロジェクトローカルMCP設定
+
+`setup-env.rb` で MCP を設定すると、プロジェクトルートに `.mcp.json` ファイルが自動生成されます。
+
+#### `.mcp.json` の構造
+
+```json
+{
+  "mcpServers": {
+    "github-personal": {
+      "command": "/Users/junya/Scripts/Shell/mcp-github-personal.sh",
+      "args": [],
+      "env": {}
+    }
+  }
+}
+```
+
+**重要なポイント**:
+- ファイルは **プロジェクトルート** に配置（`.claude/` 直下ではない）
+- `.mcp.json` は **git にコミット** すべき（プロジェクト設定）
+- `.claude/` ディレクトリ は **.gitignore に含める**（ユーザー固有の権限設定）
+
+#### 新規プロジェクトでの自動設定
+
+```bash
+# MCP設定を明示的に指定
+./setup-env.rb --lang python --mcp personal my-project
+
+# またはディレクトリベースの自動検出
+./setup-env.rb -l python ~/Dev/my-personal-project     # personal が自動選択
+./setup-env.rb -l python ~/Projects/my-work-project    # work が自動選択
+```
+
+結果：プロジェクトルートに `.mcp.json` が生成されます。
+
+#### 既存プロジェクトの移行
+
+既に MCP が グローバルに設定されているプロジェクトをプロジェクトローカル設定に移行するには、`migrate-mcp-to-local.rb` を使用します。
+
+```bash
+# ドライランモード（変更をプレビュー）
+./migrate-mcp-to-local.rb --mcp personal --dry-run ~/Dev/old-project
+
+# 実際に移行を実行
+./migrate-mcp-to-local.rb --mcp personal ~/Dev/old-project
+```
+
+**実行例**:
+```bash
+$ ./migrate-mcp-to-local.rb --mcp personal ~/Dev/apple-scripts
+[INFO] Creating new .mcp.json
+[INFO] Created .mcp.json with 'github-personal' server ✓
+[INFO] .gitignore already up to date ✓
+
+============================================================
+Migration complete! ✓
+============================================================
+
+Project: /Users/junya/Dev/apple-scripts
+MCP Type: personal
+
+Next steps:
+  1. Review .mcp.json in your project root:
+     cat /Users/junya/Dev/apple-scripts/.mcp.json
+
+  2. Commit .mcp.json to version control:
+     cd /Users/junya/Dev/apple-scripts
+     git add .mcp.json .gitignore
+     git commit -m 'feat: add project-local MCP configuration'
+
+  3. (Optional) Remove global MCP registration:
+     claude mcp remove github-personal -s local
+
+  4. Test Claude Code in this project to verify MCP works
+```
+
 ### MCP管理コマンド
 
 ```bash
@@ -189,9 +330,11 @@ claude mcp list
 # 特定のMCPサーバーの詳細確認
 claude mcp get github-work
 
-# MCPサーバーの削除
+# MCPサーバーの削除（グローバル登録の場合）
 claude mcp remove github-work -s local
 ```
+
+**注意**: `setup-env.rb` で生成される `.mcp.json` はプロジェクトローカルなため、`claude mcp` コマンドで削除する必要がありません。プロジェクトから削除する場合は単に `.mcp.json` をファイルから削除してください。
 
 ### 詳細なMCP設定
 
@@ -258,6 +401,7 @@ util-scripts/
 ├── setup-ruby-env.rb             # Ruby開発環境セットアップスクリプト（専用）
 ├── check-python-env.sh           # Python仮想環境検索ツール
 ├── llm-evaluator.py              # LLM速度ベンチマークツール
+├── migrate-mcp-to-local.rb       # MCP設定移行ツール（グローバル → プロジェクトローカル）
 ├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
 ├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
 ├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
@@ -444,6 +588,61 @@ Found 2 environments: 1 uv, 1 venv
 - Pythonバージョンを自動検出（`pyvenv.cfg`から読み取り）
 - サマリーで環境タイプごとの数を表示
 
+### migrate-mcp-to-local.rb
+
+グローバル MCP 設定をプロジェクトローカルの `.mcp.json` に移行するツールです。既存プロジェクトを新しい設定方式に移行する際に使用します。
+
+```bash
+# 基本的な使い方（実行前にドライランで確認）
+./migrate-mcp-to-local.rb --mcp personal --dry-run ~/Dev/old-project
+
+# 実際に移行を実行
+./migrate-mcp-to-local.rb --mcp personal ~/Dev/old-project
+
+# 会社用プロジェクトを移行
+./migrate-mcp-to-local.rb --mcp work ~/Projects/work-project
+
+# ヘルプを表示
+./migrate-mcp-to-local.rb --help
+```
+
+**機能**:
+- プロジェクトディレクトリから既存 MCP 設定を自動検出
+- `.mcp.json` をプロジェクトルートに自動生成
+- `.gitignore` を自動で更新（`.claude/` を除外）
+- ドライランモード（`--dry-run`）で変更をプレビュー可能
+- わかりやすいサマリーと次のステップを表示
+- エラーハンドリング機能（カラーコード付き）
+
+**出力例**:
+```bash
+$ ./migrate-mcp-to-local.rb --mcp personal ~/Dev/apple-scripts
+[INFO] Creating new .mcp.json
+[INFO] Created .mcp.json with 'github-personal' server ✓
+[INFO] .gitignore already up to date ✓
+
+============================================================
+Migration complete! ✓
+============================================================
+
+Project: /Users/junya/Dev/apple-scripts
+MCP Type: personal
+
+Next steps:
+  1. Review .mcp.json in your project root:
+     cat /Users/junya/Dev/apple-scripts/.mcp.json
+
+  2. Commit .mcp.json to version control:
+     cd /Users/junya/Dev/apple-scripts
+     git add .mcp.json .gitignore
+     git commit -m 'feat: add project-local MCP configuration'
+
+  3. (Optional) Remove global MCP registration:
+     claude mcp remove github-personal -s local
+
+  4. Test Claude Code in this project to verify MCP works
+```
+
 ### llm-evaluator.py
 
 OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価するツールです。
@@ -487,6 +686,7 @@ uv pip install -r requirements.txt
 - [setup-python-env.rb使い方](./setup-python-env.rb) - `--help`オプションで詳細を確認
 - [setup-ruby-env.rb使い方](./setup-ruby-env.rb) - `--help`オプションで詳細を確認
 - [check-python-env.sh使い方](./check-python-env.sh) - `--help`オプションで詳細を確認
+- [migrate-mcp-to-local.rb使い方](./migrate-mcp-to-local.rb) - `--help`オプションで詳細を確認
 - [llm-evaluator.py使い方](./llm-evaluator.py) - `--help`オプションで詳細を確認
 - [MCP設定ガイド](./MCP_SETUP.md) - MCPの詳細な設定とトラブルシューティング
 - [uv公式ドキュメント](https://github.com/astral-sh/uv)

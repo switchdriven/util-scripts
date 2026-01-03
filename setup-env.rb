@@ -8,6 +8,7 @@
 require "fileutils"
 require "optparse"
 require "pathname"
+require "json"
 
 begin
   require "colorize"
@@ -180,6 +181,11 @@ class PythonStrategy
       # direnv
       .envrc
       .direnv/
+
+      # Claude Code local settings (user-specific)
+      .claude/
+
+      # NOTE: .mcp.json is project config and should be committed
 
       # IDE
       .vscode/
@@ -372,6 +378,11 @@ class RubyStrategy
       .envrc
       .direnv/
 
+      # Claude Code local settings (user-specific)
+      .claude/
+
+      # NOTE: .mcp.json is project config and should be committed
+
       # IDE
       .vscode/
       .idea/
@@ -521,6 +532,11 @@ class NoneStrategy
 
   def generate_gitignore(venv_dir)
     <<~GITIGNORE
+      # Claude Code local settings (user-specific)
+      .claude/
+
+      # NOTE: .mcp.json is project config and should be committed
+
       # IDEs
       .vscode/
       .idea/
@@ -841,12 +857,6 @@ class SetupEnv
   def setup_mcp
     return if @mcp_config.empty?
 
-    unless command_exists?("claude")
-      print_error "claude CLI is not installed. MCP setup requires Claude Code."
-      print_info "Please install Claude Code first: https://claude.ai/download"
-      return
-    end
-
     wrapper_script, server_name = mcp_config_paths
 
     unless File.exist?(wrapper_script)
@@ -854,16 +864,37 @@ class SetupEnv
       return
     end
 
-    if mcp_server_configured?(server_name)
-      print_info "MCP server '#{server_name}' is already configured ✓"
-      return
+    print_info "Setting up project-local MCP configuration..."
+
+    mcp_json_path = File.join(@project_dir, ".mcp.json")
+
+    if File.exist?(mcp_json_path)
+      begin
+        existing_config = JSON.parse(File.read(mcp_json_path))
+        if existing_config.dig("mcpServers", server_name)
+          print_info "MCP server '#{server_name}' already configured ✓"
+          return
+        end
+        return unless prompt_yes?("Add '#{server_name}' to existing .mcp.json?")
+      rescue StandardError => e
+        print_error "Failed to read existing .mcp.json: #{e.message}"
+        return
+      end
+    else
+      existing_config = { "mcpServers" => {} }
     end
 
-    print_info "Adding MCP server '#{server_name}'..."
-    if system("claude mcp add --transport stdio #{server_name} -- #{wrapper_script}")
-      print_info "MCP server '#{server_name}' added successfully ✓"
-    else
-      print_error "Failed to add MCP server '#{server_name}'"
+    existing_config["mcpServers"][server_name] = {
+      "command" => wrapper_script,
+      "args" => [],
+      "env" => {}
+    }
+
+    begin
+      File.write(mcp_json_path, JSON.pretty_generate(existing_config))
+      print_info "Created .mcp.json with '#{server_name}' server ✓"
+    rescue StandardError => e
+      print_error "Failed to write .mcp.json: #{e.message}"
     end
   end
 
@@ -877,12 +908,6 @@ class SetupEnv
     end
   end
 
-  def mcp_server_configured?(server_name)
-    output = `claude mcp list 2>/dev/null`
-    output.include?(server_name)
-  rescue StandardError
-    false
-  end
 
   def setup_direnv
     envrc_file = ".envrc"
@@ -964,9 +989,15 @@ class SetupEnv
     unless @mcp_config.empty?
       puts ""
       print_info "MCP Configuration:"
-      puts "  - Config: #{@mcp_config}"
-      puts "  - Server: #{@mcp_config == 'work' ? 'github-work (GitHub Enterprise)' : 'github-personal (GitHub.com)'}"
-      puts "  - Check status: claude mcp list"
+      puts "  - Type: #{@mcp_config}"
+      server_desc = @mcp_config == 'work' ? 'github-work (GitHub Enterprise)' : 'github-personal (GitHub.com)'
+      puts "  - Server: #{server_desc}"
+      puts "  - Config file: .mcp.json (project-local, can be committed)"
+      puts "  - Approval required on first use (per project)"
+      puts ""
+      print_info "Remember to commit .mcp.json to version control:"
+      puts "  git add .mcp.json"
+      puts "  git commit -m 'feat: add MCP configuration'"
     end
   end
 end
