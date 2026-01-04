@@ -168,6 +168,56 @@ DEBUG=1 ./archive-folder.sh ~/Obsidian
 - **ファイル名形式**: `<ディレクトリ名>-YYYYMMDD.tar.gz`（例: `Obsidian-20240115.tar.gz`）
 - **シンボリックリンク**: 先の実体をバックアップ
 
+#### launchd で自動バックアップを設定（macOS）
+
+毎日起動時にバックアップを自動実行できます。
+
+**1. テンプレートから plist を作成:**
+
+```bash
+# テンプレートをコピー
+cp org.warumono.backup-obsidian.plist.template /tmp/org.warumono.backup-obsidian.plist
+
+# パスを置換（以下のコマンドで置換）
+sed -i '' \
+  "s|PATH_TO_SCRIPT|$(pwd)/archive-folder.sh|g" \
+  "s|PATH_TO_OBSIDIAN|$HOME/Obsidian|g" \
+  "s|HOME_DIR|$HOME|g" \
+  /tmp/org.warumono.backup-obsidian.plist
+
+# plist をインストール
+cp /tmp/org.warumono.backup-obsidian.plist ~/Library/LaunchAgents/
+
+# launchd に登録
+launchctl load ~/Library/LaunchAgents/org.warumono.backup-obsidian.plist
+```
+
+**2. 動作確認:**
+
+```bash
+# 登録状況確認
+launchctl list | grep backup-obsidian
+
+# 手動実行（テスト）
+launchctl start org.warumono.backup-obsidian
+
+# ログ確認
+tail -20 ~/Library/Logs/backup-obsidian.log
+```
+
+**3. アンインストール:**
+
+```bash
+launchctl unload ~/Library/LaunchAgents/org.warumono.backup-obsidian.plist
+rm ~/Library/LaunchAgents/org.warumono.backup-obsidian.plist
+```
+
+**トラブルシューティング:**
+
+- iCloud ドライブを使用している場合、初回実行時にアクセス権付与を求められます
+- ログは `~/Library/Logs/backup-obsidian.log` と `backup-obsidian-error.log` に記録されます
+- スクリプトのパスが変わった場合は plist を再生成してください
+
 ## 必須ツール
 
 ### Ruby環境（setup-ruby-env.rb使用時）
