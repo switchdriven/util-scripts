@@ -151,6 +151,10 @@ uv pip install -r requirements.txt
 # カスタムバックアップ先を指定
 ./archive-folder.sh ~/MyVault ~/MyBackups   # ~/MyBackups/MyVault-20240115.tar.gz を作成
 
+# 強制実行（既存のバックアップを上書き確認なし）
+./archive-folder.sh --force ~/Obsidian      # 確認を飛ばして実行
+./archive-folder.sh -f ~/Documents          # 短縮形
+
 # ヘルプの表示
 ./archive-folder.sh --help
 
