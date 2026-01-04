@@ -132,6 +132,38 @@ OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価�
 uv pip install -r requirements.txt
 ```
 
+### archive-folder.sh
+
+任意のディレクトリを日付付き tar.gz アーカイブでバックアップするシェルスクリプトです。シンボリックリンク先の実体をバックアップします。
+
+- `<ディレクトリ名>-YYYYMMDD.tar.gz` 形式でアーカイブ作成
+- シンボリックリンクの先の実体をバックアップ
+- 同じ日付のバックアップが既存の場合は上書き確認
+- バックアップ完了後に該当ディレクトリの直近5個を表示
+
+#### 使い方
+
+```bash
+# デフォルト（~/Backup/Archives にアーカイブ作成）
+./archive-folder.sh ~/Obsidian              # Obsidian-20240115.tar.gz を作成
+./archive-folder.sh ~/Documents             # Documents-20240115.tar.gz を作成
+
+# カスタムバックアップ先を指定
+./archive-folder.sh ~/MyVault ~/MyBackups   # ~/MyBackups/MyVault-20240115.tar.gz を作成
+
+# ヘルプの表示
+./archive-folder.sh --help
+
+# デバッグモード
+DEBUG=1 ./archive-folder.sh ~/Obsidian
+```
+
+#### デフォルト動作
+
+- **バックアップ先**: `~/Backup/Archives`
+- **ファイル名形式**: `<ディレクトリ名>-YYYYMMDD.tar.gz`（例: `Obsidian-20240115.tar.gz`）
+- **シンボリックリンク**: 先の実体をバックアップ
+
 ## 必須ツール
 
 ### Ruby環境（setup-ruby-env.rb使用時）
