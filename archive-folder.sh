@@ -124,7 +124,7 @@ fi
 
 # Perform backup
 log_info "Starting backup of $TARGET_PATH..."
-if (cd "$TARGET_PATH" && tar -czf "$ARCHIVE_PATH" .) 2>/dev/null; then
+if (cd "$TARGET_PATH" && tar --format=ustar -czf "$ARCHIVE_PATH" .) 2>/dev/null; then
     readonly FILE_SIZE=$(du -h "$ARCHIVE_PATH" | cut -f1)
     log_success "Backup completed: $ARCHIVE_PATH ($FILE_SIZE)"
 
