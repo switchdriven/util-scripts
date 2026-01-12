@@ -16,62 +16,7 @@ readonly NC='\033[0m' # No Color
 readonly DEFAULT_BACKUP_BASE_DIR="${HOME}/Backup/Archives"
 readonly TIMESTAMP=$(date +%Y%m%d)
 
-# Parse arguments
-TARGET_PATH=""
-BACKUP_BASE_DIR="${DEFAULT_BACKUP_BASE_DIR}"
-FORCE=0
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --help)
-            print_help() {
-                cat << EOF
-Usage: $(basename "$0") [OPTIONS] <directory_path> [backup_base_dir]
-
-Backup a directory to a tar.gz file with timestamp (<dir_name>-YYYYMMDD.tar.gz).
-
-Arguments:
-  directory_path     Path to directory to backup (required)
-  backup_base_dir    Base directory for backups (default: \$HOME/Backup/Archives)
-
-Options:
-  --force, -f        Overwrite existing backup without confirmation
-  --help             Show this help message
-
-Examples:
-  $(basename "$0") ~/Obsidian                         # Backup to ~/Backup/Archives/Obsidian-20240115.tar.gz
-  $(basename "$0") ~/Documents ~/MyBackups            # Backup to ~/MyBackups/Documents-20240115.tar.gz
-  $(basename "$0") --force ~/Obsidian                 # Overwrite without asking
-  $(basename "$0") --help                             # Show help
-
-Environment variables:
-  DEBUG              Set to 1 for verbose output
-
-EOF
-            }
-            print_help
-            exit 0
-            ;;
-        --force|-f)
-            FORCE=1
-            shift
-            ;;
-        -*)
-            log_error "Unknown option: $1"
-            exit 1
-            ;;
-        *)
-            if [[ -z "$TARGET_PATH" ]]; then
-                TARGET_PATH="$1"
-            else
-                BACKUP_BASE_DIR="$1"
-            fi
-            shift
-            ;;
-    esac
-done
-
-# Functions
+# Functions (定義を先に)
 print_help() {
     cat << EOF
 Usage: $(basename "$0") [OPTIONS] <directory_path> [backup_base_dir]
@@ -119,6 +64,36 @@ debug() {
         echo -e "${BLUE}[DEBUG]${NC} $*" >&2
     fi
 }
+
+# Parse arguments
+TARGET_PATH=""
+BACKUP_BASE_DIR="${DEFAULT_BACKUP_BASE_DIR}"
+FORCE=0
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help|-h)
+            print_help
+            exit 0
+            ;;
+        --force|-f)
+            FORCE=1
+            shift
+            ;;
+        -*)
+            log_error "Unknown option: $1"
+            exit 1
+            ;;
+        *)
+            if [[ -z "$TARGET_PATH" ]]; then
+                TARGET_PATH="$1"
+            else
+                BACKUP_BASE_DIR="$1"
+            fi
+            shift
+            ;;
+    esac
+done
 
 # Check if target path is provided
 if [[ -z "$TARGET_PATH" ]]; then
