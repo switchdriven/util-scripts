@@ -134,26 +134,33 @@ uv pip install -r requirements.txt
 
 ### archive-folder.sh
 
-任意のディレクトリを日付付き tar.gz アーカイブでバックアップするシェルスクリプトです。シンボリックリンク先の実体をバックアップします。
+任意のディレクトリを日付付き tar.gz アーカイブでバックアップするシェルスクリプトです。
 
 - `<ディレクトリ名>-YYYYMMDD.tar.gz` 形式でアーカイブ作成
-- シンボリックリンクの先の実体をバックアップ
+- **デフォルト**: シンボリックリンクの先の実体をバックアップ
+- `--no-dereference` オプションでシンボリックリンク情報のみを保存
 - 同じ日付のバックアップが既存の場合は上書き確認
 - バックアップ完了後に該当ディレクトリの直近5個を表示
 
 #### 使い方
 
 ```bash
-# デフォルト（~/Backup/Archives にアーカイブ作成）
+# デフォルト（~/Backup/Archives にアーカイブ作成、symlink を辿る）
 ./archive-folder.sh ~/Obsidian              # Obsidian-20240115.tar.gz を作成
 ./archive-folder.sh ~/Documents             # Documents-20240115.tar.gz を作成
 
 # カスタムバックアップ先を指定
 ./archive-folder.sh ~/MyVault ~/MyBackups   # ~/MyBackups/MyVault-20240115.tar.gz を作成
 
+# symlink を辿らずに保存
+./archive-folder.sh --no-dereference ~/Obsidian
+
 # 強制実行（既存のバックアップを上書き確認なし）
 ./archive-folder.sh --force ~/Obsidian      # 確認を飛ばして実行
 ./archive-folder.sh -f ~/Documents          # 短縮形
+
+# オプション組み合わせ
+./archive-folder.sh --force --no-dereference ~/Obsidian
 
 # ヘルプの表示
 ./archive-folder.sh --help
@@ -166,7 +173,8 @@ DEBUG=1 ./archive-folder.sh ~/Obsidian
 
 - **バックアップ先**: `~/Backup/Archives`
 - **ファイル名形式**: `<ディレクトリ名>-YYYYMMDD.tar.gz`（例: `Obsidian-20240115.tar.gz`）
-- **シンボリックリンク**: 先の実体をバックアップ
+- **シンボリックリンク**: 先の実体をバックアップ（`--dereference` を使用）
+  - `--no-dereference` オプションでシンボリックリンク情報のみを保存
 
 #### launchd で自動バックアップを設定（macOS）
 
