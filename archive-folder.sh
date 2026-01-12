@@ -28,13 +28,15 @@ Arguments:
   backup_base_dir    Base directory for backups (default: \$HOME/Backup/Archives)
 
 Options:
-  --force, -f        Overwrite existing backup without confirmation
-  --help             Show this help message
+  --force, -f              Overwrite existing backup without confirmation
+  --no-dereference         Store symlinks as-is instead of following them (default: follows symlinks)
+  --help                   Show this help message
 
 Examples:
   $(basename "$0") ~/Obsidian                         # Backup to ~/Backup/Archives/Obsidian-20240115.tar.gz
   $(basename "$0") ~/Documents ~/MyBackups            # Backup to ~/MyBackups/Documents-20240115.tar.gz
   $(basename "$0") --force ~/Obsidian                 # Overwrite without asking
+  $(basename "$0") --no-dereference ~/Obsidian        # Store symlinks without following them
   $(basename "$0") --help                             # Show help
 
 Environment variables:
@@ -69,6 +71,7 @@ debug() {
 TARGET_PATH=""
 BACKUP_BASE_DIR="${DEFAULT_BACKUP_BASE_DIR}"
 FORCE=0
+DEREFERENCE=1
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -78,6 +81,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --force|-f)
             FORCE=1
+            shift
+            ;;
+        --no-dereference)
+            DEREFERENCE=0
             shift
             ;;
         -*)
@@ -117,6 +124,7 @@ debug "Target path: $TARGET_PATH"
 debug "Directory name: $DIR_NAME"
 debug "Backup base directory: $BACKUP_BASE_DIR"
 debug "Timestamp: $TIMESTAMP"
+debug "Dereference symlinks: $DEREFERENCE"
 
 # Create backup directory if it doesn't exist
 if [[ ! -d "$BACKUP_BASE_DIR" ]]; then
@@ -150,7 +158,7 @@ fi
 
 # Perform backup
 log_info "Starting backup of $TARGET_PATH..."
-if (cd "$TARGET_PATH" && tar --format=pax --no-xattrs -czf "$ARCHIVE_PATH" .); then
+if (cd "$TARGET_PATH" && tar $([ $DEREFERENCE -eq 1 ] && echo "--dereference") --format=pax --no-xattrs -czf "$ARCHIVE_PATH" .); then
     readonly FILE_SIZE=$(du -h "$ARCHIVE_PATH" | cut -f1)
     log_success "Backup completed: $ARCHIVE_PATH ($FILE_SIZE)"
 
