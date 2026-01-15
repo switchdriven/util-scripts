@@ -195,7 +195,7 @@ display dialog allInfo with title "All Wi-Fi Information"
 
 #### 詳細ドキュメント
 
-詳しくは [NET-PORT-RB.md](NET-PORT-RB.md) を参照してください。
+詳しくは [NET-PORT.md](NET-PORT.md) を参照してください。
 
 ### get-ssid.sh
 
