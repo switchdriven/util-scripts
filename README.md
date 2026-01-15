@@ -132,6 +132,42 @@ OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価�
 uv pip install -r requirements.txt
 ```
 
+### get-ssid.sh
+
+現在接続しているWi-FiのSSIDを取得するシェルスクリプトです。
+
+- macOSのプライバシー保護機構を回避してSSID情報を取得
+- 指定したネットワークインターフェース（デフォルト: `en0`）の接続状態を確認
+- リンクローカルアドレス（DHCP失敗）の検出
+- 接続失敗時には適切なエラーメッセージを表示
+
+#### 使い方
+
+```bash
+# デフォルト（en0インターフェース）
+./get-ssid.sh
+
+# 特定のインターフェースを指定
+./get-ssid.sh en1
+
+# スクリプト内で使用
+SSID=$(./get-ssid.sh)
+echo "Connected to: $SSID"
+```
+
+#### 動作原理
+
+1. 指定インターフェースに有効なIPアドレスが割り当てられているか確認
+2. リンクローカルアドレス（`169.254.*`）による接続失敗を検出
+3. 優先ネットワーク一覧から現在のSSIDを取得
+
+#### 戻り値
+
+- **成功時**: SSID名を出力（終了コード0）
+- **Wi-Fi未接続**: `Wi-Fi not connected (en0)` を出力（終了コード1）
+- **DHCP失敗**: `Wi-Fi connection error - DHCP failed (en0)` を出力（終了コード1）
+- **SSID取得失敗**: `Failed to get SSID (en0)` を出力（終了コード1）
+
 ### archive-folder.sh
 
 任意のディレクトリを日付付き tar.gz アーカイブでバックアップするシェルスクリプトです。
