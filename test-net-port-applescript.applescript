@@ -53,6 +53,16 @@ on getPortListJSON()
     end try
 end getPortListJSON
 
+-- Get all information for a port
+on getPortAllInfo()
+    try
+        set allInfo to (do shell script "/Users/junya/Dev/util-scripts/net-port.rb all Wi-Fi")
+        return allInfo
+    on error errMsg
+        return "Error: " & errMsg
+    end try
+end getPortAllInfo
+
 -- Main test execution
 on run
     display notification "Wi-Fi SSID: " & getWiFiSSID() with title "net-port.rb Test"
@@ -74,4 +84,9 @@ on run
         "IP Address: " & getWiFiAddr()
 
     display dialog summary buttons {"OK"} default button 1 with title "Network Port Info"
+
+    -- Show all info using all command
+    display notification "All Wi-Fi Info:" with title "net-port.rb Test"
+    set allInfo to getPortAllInfo()
+    display dialog allInfo buttons {"OK"} default button 1 with title "All Wi-Fi Information"
 end run

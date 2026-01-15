@@ -159,9 +159,13 @@ macOS のネットワークポート情報を取得するRubyスクリプトで�
 # Wi-Fi ポートの SSID を取得
 ./net-port.rb ssid Wi-Fi
 
+# ポートのすべての情報を取得（推奨）
+./net-port.rb all Wi-Fi
+
 # JSON 形式で出力
 ./net-port.rb --format json list
 ./net-port.rb --format json device Wi-Fi
+./net-port.rb --format json all Wi-Fi
 
 # ヘルプを表示
 ./net-port.rb --help
@@ -183,6 +187,10 @@ try
 on error errMsg
     display dialog "Error: " & errMsg buttons {"OK"} with icon caution
 end try
+
+-- Wi-Fi のすべての情報を取得（推奨）
+set allInfo to (do shell script "/path/to/net-port.rb all Wi-Fi")
+display dialog allInfo with title "All Wi-Fi Information"
 ```
 
 #### 詳細ドキュメント

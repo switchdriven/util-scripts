@@ -37,6 +37,9 @@ chmod +x net-port.rb
 # Wi-Fi ポートの SSID を取得
 ./net-port.rb ssid Wi-Fi
 
+# ポートのすべての情報を取得（device, status, addr, ssid）
+./net-port.rb all Wi-Fi
+
 # ヘルプを表示
 ./net-port.rb -h
 ./net-port.rb --help
@@ -49,6 +52,7 @@ chmod +x net-port.rb
 ./net-port.rb --format json list
 ./net-port.rb --format json device Wi-Fi
 ./net-port.rb --format json ssid Wi-Fi
+./net-port.rb --format json all Wi-Fi
 ```
 
 ## 出力形式
@@ -72,6 +76,13 @@ $ net-port.rb addr Wi-Fi
 
 $ net-port.rb ssid Wi-Fi
 MySSID
+
+$ net-port.rb all Wi-Fi
+Port: Wi-Fi
+Device: en0
+Status: active
+Address: 192.168.1.100
+SSID: MySSID
 ```
 
 ### JSON 形式
@@ -91,6 +102,9 @@ $ net-port.rb --format json addr Wi-Fi
 
 $ net-port.rb --format json ssid Wi-Fi
 {"port":"Wi-Fi","ssid":"MySSID"}
+
+$ net-port.rb --format json all Wi-Fi
+{"port":"Wi-Fi","device":"en0","status":"active","addr":"192.168.1.100","ssid":"MySSID"}
 ```
 
 ## AppleScript からの利用
@@ -111,6 +125,10 @@ end if
 -- Wi-Fi の IP アドレスを取得
 set ipAddr to (do shell script "/path/to/net-port.rb addr Wi-Fi")
 display dialog "IP Address: " & ipAddr
+
+-- Wi-Fi のすべての情報を取得（推奨）
+set allInfo to (do shell script "/path/to/net-port.rb all Wi-Fi")
+display dialog allInfo
 ```
 
 ### エラーハンドリング

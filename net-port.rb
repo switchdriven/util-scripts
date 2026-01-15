@@ -80,33 +80,28 @@ class NetworkPortUtility
 
   # Get SSID for a Wi-Fi port
   # Logic from get-ssid.sh: checks IP, DHCP status, then retrieves preferred network
+  # Returns SSID or "none" if not available
   def get_ssid(device)
     # Check if interface has an IP address
     ip_addr = `ipconfig getifaddr #{device} 2>/dev/null`.strip
 
     if ip_addr.empty?
-      set_error("Wi-Fi not connected (#{device})")
-      return nil
+      return 'none'
     end
 
     # Check for link-local address (DHCP failure)
     if ip_addr.match?(/^169\.254\./)
-      set_error("Wi-Fi connection error - DHCP failed (#{device})")
-      return nil
+      return 'none'
     end
 
     # Get preferred network (first in the list)
     ssid_output = `networksetup -listpreferredwirelessnetworks #{device} 2>/dev/null | sed -n '2p' | sed 's/^[[:space:]]*//'`.strip
 
-    if ssid_output.empty?
-      set_error("Failed to get SSID (#{device})")
-      return nil
-    end
+    return 'none' if ssid_output.empty?
 
     ssid_output
-  rescue StandardError => e
-    set_error("Error getting SSID: #{e.message}")
-    nil
+  rescue StandardError
+    'none'
   end
 
   # Command: list all ports and devices
@@ -203,12 +198,8 @@ class NetworkPortUtility
     when 'json'
       if ports.key?(port)
         ssid = get_ssid(ports[port])
-        if ssid
-          output = { port:, ssid: }
-          puts JSON.generate(output)
-        else
-          exit 1
-        end
+        output = { port:, ssid: }
+        puts JSON.generate(output)
       else
         set_error("Port '#{port}' not found")
         exit 1
@@ -216,11 +207,50 @@ class NetworkPortUtility
     when 'text'
       if ports.key?(port)
         ssid = get_ssid(ports[port])
-        puts ssid if ssid
+        puts ssid
       else
         set_error("Port '#{port}' not found")
         exit 1
       end
+    end
+  end
+
+  # Command: get all information for a port
+  def cmd_all(port)
+    ports = get_device_list
+
+    if !ports.key?(port)
+      case @format
+      when 'json'
+        set_error("Port '#{port}' not found")
+        exit 1
+      when 'text'
+        set_error("Port '#{port}' not found")
+        exit 1
+      end
+    end
+
+    device = ports[port]
+    status = get_port_status(device)
+    addr = get_port_addr(device)
+    ssid = get_ssid(device)
+
+    case @format
+    when 'json'
+      output = {
+        port:,
+        device:,
+        status:,
+        addr:,
+        ssid:
+      }
+      puts JSON.generate(output)
+    when 'text'
+      puts "Port: #{port}"
+      puts "Device: #{device}"
+      puts "Status: #{status}"
+      puts "Address: #{addr || 'none'}"
+      puts "SSID: #{ssid}"
     end
   end
 
@@ -259,6 +289,7 @@ def main
         status PORT       Show connection status for a port
         addr PORT         Show IPv4 address for a port
         ssid PORT         Show SSID for a Wi-Fi port
+        all PORT          Show all information for a port
 
       Examples:
         net-port.rb list
@@ -266,7 +297,9 @@ def main
         net-port.rb status Ethernet
         net-port.rb addr Wi-Fi
         net-port.rb ssid Wi-Fi
+        net-port.rb all Wi-Fi
         net-port.rb --format json device Wi-Fi
+        net-port.rb --format json all Wi-Fi
     HELP
     exit 0
   end
@@ -305,6 +338,14 @@ def main
     port = ARGV.shift
     if port
       utility.cmd_ssid(port)
+    else
+      warn 'Error: port argument required'
+      exit 1
+    end
+  when 'all'
+    port = ARGV.shift
+    if port
+      utility.cmd_all(port)
     else
       warn 'Error: port argument required'
       exit 1
