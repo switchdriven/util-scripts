@@ -132,6 +132,63 @@ OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価�
 uv pip install -r requirements.txt
 ```
 
+### net-port.rb
+
+macOS のネットワークポート情報を取得するRubyスクリプトです。AppleScriptからの呼び出しを想定した設計で、外部モジュール依存なしで実装されています。
+
+- ハードウェアポート一覧、デバイス名、接続ステータス、IP アドレス、SSID を取得
+- テキスト/JSON 形式の出力に対応
+- AppleScript との連携に最適化
+- **外部 Ruby ライブラリ不要**（Ruby 標準ライブラリのみ使用）
+
+#### 使い方
+
+```bash
+# ハードウェアポート一覧を表示
+./net-port.rb list
+
+# ポート名からデバイス名を取得
+./net-port.rb device Wi-Fi
+
+# ポートのステータスを取得
+./net-port.rb status Wi-Fi
+
+# ポートの IPv4 アドレスを取得
+./net-port.rb addr Wi-Fi
+
+# Wi-Fi ポートの SSID を取得
+./net-port.rb ssid Wi-Fi
+
+# JSON 形式で出力
+./net-port.rb --format json list
+./net-port.rb --format json device Wi-Fi
+
+# ヘルプを表示
+./net-port.rb --help
+```
+
+#### AppleScript からの利用例
+
+```applescript
+-- Wi-Fi の SSID を取得
+set currentSSID to (do shell script "/path/to/net-port.rb ssid Wi-Fi")
+display dialog "Current network: " & currentSSID
+
+-- Wi-Fi のステータスを確認してアクション
+try
+    set wifiStatus to (do shell script "/path/to/net-port.rb status Wi-Fi")
+    if wifiStatus is "active" then
+        display notification "Wi-Fi is connected"
+    end if
+on error errMsg
+    display dialog "Error: " & errMsg buttons {"OK"} with icon caution
+end try
+```
+
+#### 詳細ドキュメント
+
+詳しくは [NET-PORT-RB.md](NET-PORT-RB.md) を参照してください。
+
 ### get-ssid.sh
 
 現在接続しているWi-FiのSSIDを取得するシェルスクリプトです。
@@ -167,6 +224,8 @@ echo "Connected to: $SSID"
 - **Wi-Fi未接続**: `Wi-Fi not connected (en0)` を出力（終了コード1）
 - **DHCP失敗**: `Wi-Fi connection error - DHCP failed (en0)` を出力（終了コード1）
 - **SSID取得失敗**: `Failed to get SSID (en0)` を出力（終了コード1）
+
+**注**: `net-port.rb` でも SSID 取得機能が実装されているため、AppleScript からは `net-port.rb` の使用をお勧めします。
 
 ### archive-folder.sh
 
