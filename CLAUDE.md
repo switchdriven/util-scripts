@@ -213,6 +213,66 @@ security find-generic-password -w -s "perplexity-token"
 - `.mcp.json` はプロジェクトルートに配置（git コミット対象）
 - `.claude/` は `.gitignore` に含める
 
+### MCP 設定フロー
+
+#### GitHub MCP の自動検出
+
+ディレクトリ位置に基づいて自動検出・確認します：
+
+```bash
+# ~/Dev/* → personal が推測される（確認あり）
+./setup-env.rb -l python ~/Dev/my-project
+
+# ~/Projects/* → work が推測される（確認あり）
+./setup-env.rb -l python ~/Projects/my-project
+
+# 上記以外 → MCP選択肢が提示される
+./setup-env.rb -l python ~/other/my-project
+```
+
+**挙動：**
+
+1. **自動検出段階**: ディレクトリ位置から GitHub MCP を推測
+2. **ユーザー確認**: 推測結果に対して「この設定を使う？」と確認
+   - 「yes」: その MCP が設定される
+   - 「no」: 選択肢メニューが表示される
+3. **選択肢メニュー**（確認なし or 推測失敗時）:
+   ```
+   Do you want to configure an MCP server?
+     1) GitHub Enterprise (work) - gh.iiji.jp
+     2) GitHub Personal (personal) - github.com
+     3) Perplexity AI (perplexity)
+     4) None (skip MCP setup)
+   ```
+
+#### 明示的指定
+
+```bash
+./setup-env.rb --lang python --mcp work my-project        # GitHub work
+./setup-env.rb --lang python --mcp personal my-project    # GitHub personal
+./setup-env.rb --lang python --mcp perplexity my-project  # Perplexity
+./setup-env.rb --lang python my-project                   # MCP設定なし
+```
+
+#### 非対話モード
+
+対話入力がない場合（CI環境など）:
+- 自動検出後の確認で入力がない → MCP設定なし
+- 選択肢メニューで入力がない → MCP設定なし
+
+#### Perplexity の使用方法
+
+**MCP 経由でPerplexity を使う場合**:
+
+```bash
+./setup-env.rb --lang python --mcp perplexity my-project
+# → .mcp.json に perplexity サーバーが自動追加される
+```
+
+**MCP 経由しない場合**（直接 API 使用など）:
+- 手動設定は不要
+- プロジェクトコードから直接 Perplexity API を呼び出し
+
 ### 詳細なMCP設定
 
 詳細な設定方法とトラブルシューティングについては[MCP_SETUP.md](MCP_SETUP.md)を参照してください。

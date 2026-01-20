@@ -610,7 +610,7 @@ class SetupEnv
   include CommonHelpers
 
   DEFAULT_VENV_DIR = ".venv"
-  MCP_CONFIGS = ["work", "personal"].freeze
+  MCP_CONFIGS = ["work", "personal", "perplexity"].freeze
   LANGUAGES = {
     "python" => PythonStrategy,
     "ruby" => RubyStrategy,
@@ -673,9 +673,9 @@ class SetupEnv
         @venv_dir = d
       end
 
-      opts.on("-m", "--mcp CONFIG", "MCP configuration: 'work' or 'personal'") do |m|
+      opts.on("-m", "--mcp CONFIG", "MCP configuration: 'work', 'personal', or 'perplexity'") do |m|
         unless MCP_CONFIGS.include?(m)
-          print_error "Invalid MCP config: #{m} (must be 'work' or 'personal')"
+          print_error "Invalid MCP config: #{m} (must be 'work', 'personal', or 'perplexity')"
           exit 1
         end
         @mcp_config = m
@@ -698,10 +698,12 @@ class SetupEnv
       opts.separator "  - Otherwise, prompts for language selection"
       opts.separator ""
       opts.separator "MCP AUTO-DETECTION:"
-      opts.separator "  - If --mcp is not specified, auto-detects from project location:"
+      opts.separator "  - Auto-detects only for GitHub MCP from project location:"
       opts.separator "    - ~/Projects/* → work (GitHub Enterprise)"
       opts.separator "    - ~/Dev/* → personal (GitHub.com)"
-      opts.separator "  - If explicit --mcp conflicts with location, shows warning"
+      opts.separator "  - If auto-detected, asks for confirmation"
+      opts.separator "  - If not auto-detected, presents selection menu"
+      opts.separator "  - For Perplexity MCP, explicit --mcp flag required"
       opts.separator ""
       opts.separator "REQUIREMENTS:"
       opts.separator "  - direnv: Environment switcher (https://direnv.net/)"
@@ -772,6 +774,39 @@ class SetupEnv
     end
   end
 
+  def ask_mcp_selection
+    puts ""
+    puts "Do you want to configure an MCP server?"
+    puts "  1) GitHub Enterprise (work) - gh.iiji.jp"
+    puts "  2) GitHub Personal (personal) - github.com"
+    puts "  3) Perplexity AI (perplexity)"
+    puts "  4) None (skip MCP setup)"
+    print "Enter choice [1-4]: "
+
+    choice = $stdin.gets
+
+    # Non-interactive mode: no input, skip MCP setup
+    if choice.nil?
+      print_warn "No input detected (non-interactive mode). Skipping MCP setup."
+      @mcp_config = ""
+      return
+    end
+
+    case choice.chomp
+    when "1"
+      @mcp_config = "work"
+    when "2"
+      @mcp_config = "personal"
+    when "3"
+      @mcp_config = "perplexity"
+    when "4"
+      @mcp_config = ""
+    else
+      print_error "Invalid choice: #{choice.chomp}"
+      exit 1
+    end
+  end
+
   def infer_mcp_from_project_dir
     resolved_dir = File.expand_path(@project_dir)
 
@@ -786,29 +821,36 @@ class SetupEnv
   end
 
   def validate_and_set_mcp_config
-    inferred = infer_mcp_from_project_dir
-
-    # Case 1: User did not specify --mcp
-    if @mcp_config.empty?
-      if inferred
-        @mcp_config = inferred
-        print_info "Auto-detected MCP config from project location: #{inferred}"
+    # Case 1: User specified --mcp flag explicitly
+    if !@mcp_config.empty?
+      inferred = infer_mcp_from_project_dir
+      # GitHub MCP で自動検出結果と矛盾がある場合のみ警告
+      if inferred && @mcp_config != inferred && ["work", "personal"].include?(@mcp_config)
+        resolved_dir = File.expand_path(@project_dir)
+        print_warn "⚠️  MCP config mismatch detected!"
+        print_warn "    Project location: #{resolved_dir}"
+        print_warn "    Inferred from location: #{inferred}"
+        print_warn "    You specified: #{@mcp_config}"
+        puts ""
+        return prompt_yes?("Continue with explicit setting?")
       end
       return true
     end
 
-    # Case 2: User specified --mcp, check for conflicts
-    if inferred && @mcp_config != inferred
-      resolved_dir = File.expand_path(@project_dir)
-      print_warn "⚠️  MCP config mismatch detected!"
-      print_warn "    Project location: #{resolved_dir}"
-      print_warn "    Inferred from location: #{inferred}"
-      print_warn "    You specified: #{@mcp_config}"
-      puts ""
+    # Case 2: User did not specify --mcp, try auto-detection
+    inferred = infer_mcp_from_project_dir
 
-      return prompt_yes?("Continue with explicit setting?")
+    if inferred
+      print_info "Auto-detected MCP from project location: #{inferred}"
+      if prompt_yes?("Use this MCP configuration (#{inferred})?")
+        @mcp_config = inferred
+        return true
+      end
     end
 
+    # Case 3: Either not auto-detected or user rejected auto-detected config
+    # Present selection menu
+    ask_mcp_selection
     true
   end
 
@@ -905,6 +947,8 @@ class SetupEnv
       ["#{scripts_dir}/mcp-github-work.sh", "github-work"]
     when "personal"
       ["#{scripts_dir}/mcp-github-personal.sh", "github-personal"]
+    when "perplexity"
+      ["#{scripts_dir}/mcp-perplexity.sh", "perplexity"]
     end
   end
 
@@ -990,7 +1034,14 @@ class SetupEnv
       puts ""
       print_info "MCP Configuration:"
       puts "  - Type: #{@mcp_config}"
-      server_desc = @mcp_config == 'work' ? 'github-work (GitHub Enterprise)' : 'github-personal (GitHub.com)'
+      server_desc = case @mcp_config
+                    when 'work'
+                      'github-work (GitHub Enterprise)'
+                    when 'personal'
+                      'github-personal (GitHub.com)'
+                    when 'perplexity'
+                      'perplexity (Perplexity API)'
+                    end
       puts "  - Server: #{server_desc}"
       puts "  - Config file: .mcp.json (project-local, can be committed)"
       puts "  - Approval required on first use (per project)"
