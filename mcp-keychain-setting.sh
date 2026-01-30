@@ -18,10 +18,14 @@ GITHUB_WORK_TOKEN=$(op read "op://Personal/GitHubEnt For MCP/token")
 # Perplexity API キー
 PERPLEXITY_API_KEY=$(op read "op://Personal/Perplexity API/credential")
 
+# Gemini API キー
+GEMINI_API_KEY=$(op read "op://Personal/bukkfg4ju6m54ln3xw7vwbblry/credential")
+
 echo "Delete current keys"
 security delete-generic-password -s "github-personal-token" > /dev/null 2>&1
 security delete-generic-password -s "github-work-token" > /dev/null 2>&1
 security delete-generic-password -s "perplexity-token" > /dev/null 2>&1
+security delete-generic-password -s "gemini-token" > /dev/null 2>&1
 
 echo "Setting tokens to keychain"
 
@@ -42,6 +46,12 @@ security add-generic-password \
   -s "perplexity-token" \
   -a "$(whoami)" \
   -w "$PERPLEXITY_API_KEY"
+
+# Gemini API キー
+security add-generic-password \
+  -s "gemini-token" \
+  -a "$(whoami)" \
+  -w "$GEMINI_API_KEY"
 
 echo "Verifying tokens"
 
@@ -71,6 +81,16 @@ if [ "$TOKEN_PERPLEXITY" != "$PERPLEXITY_API_KEY" ]; then
 else
     echo "OK"
 fi
+
+TOKEN_GEMINI=$(security find-generic-password -w -s "gemini-token")
+printf "Check gemini-token .. "
+if [ "$TOKEN_GEMINI" != "$GEMINI_API_KEY" ]; then
+    echo "NG"
+    exit 1
+else
+    echo "OK"
+fi
+
 
 exit 0 
 

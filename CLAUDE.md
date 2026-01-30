@@ -325,35 +325,7 @@ MCPツールでエラーが発生した場合：
 
 ## プロジェクト構造
 
-このリポジトリはユーティリティスクリプトを格納するように設計されています。スクリプトを追加する際は、以下の観点で整理してください:
-- 言語別（Python、Shell など）
-- 用途別（ファイル操作、システムユーティリティ、自動化 など）
-
-### ファイル構成
-
-```
-util-scripts/
-├── setup-env.rb                  # 統合開発環境セットアップスクリプト（推奨）
-├── setup-python-env.rb           # Python開発環境セットアップスクリプト（専用）
-├── setup-ruby-env.rb             # Ruby開発環境セットアップスクリプト（専用）
-├── check-python-env.sh           # Python仮想環境検索ツール
-├── llm-evaluator.py              # LLM速度ベンチマークツール
-├── migrate-mcp-to-local.rb       # MCP設定移行ツール（グローバル → プロジェクトローカル）
-├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
-├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
-├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
-├── MCP_SETUP.md                  # MCP設定の詳細ドキュメント
-├── CLAUDE.md                     # このファイル（プロジェクトガイド）
-└── README.md                     # プロジェクトREADME
-
-~/Scripts/Shell/
-├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用、シンボリックリンクまたはコピー）
-├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用、シンボリックリンクまたはコピー）
-└── mcp-github-setting.sh         # トークン同期スクリプト（シンボリックリンク）
-
-~/Dev/github-mcp-server/
-└── github-mcp-server             # GitHub公式MCPサーバー（Go実装）
-```
+このリポジトリはユーティリティスクリプト集です。各スクリプトの使い方は `--help` オプションで確認してください。
 
 ## 開発ガイドライン
 
@@ -372,13 +344,25 @@ util-scripts/
 - スクリプトを実行可能にする: `chmod +x script.sh`
 - カラーコードを使って見やすい出力にする（setup-python-env.shを参考）
 
-### 依存関係
-- Pythonの依存関係は`uv`で管理
+#### ドキュメント
+- 各スクリプトには `--help` オプションを実装する
+- README.md には概要1行 + `--help` のみ記載:
+  ```markdown
+  ### script-name.py
+
+  スクリプトの概要を1行で説明。
+
   ```bash
-  uv pip install <package>
-  uv pip freeze > requirements.txt
+  ./script-name.py --help
   ```
-- `pyproject.toml`を使ったモダンなパッケージ管理を推奨
+  ```
+
+### 依存関係
+- Pythonの依存関係は`pyproject.toml`で管理
+  ```bash
+  # pyproject.toml の dependencies に追加後
+  uv pip install -e .
+  ```
 - システムレベルの依存関係はREADMEに記載
 
 ### テスト
@@ -441,132 +425,9 @@ util-scripts/
 
 5. **Claude Code を再起動**: 設定変更後は必ず再起動してください
 
-## スクリプトの使い方
-
-### setup-env.rb
-
-統合開発環境セットアップスクリプトです。Python と Ruby の両方に対応し、言語を自動検出します。
-
-```bash
-# 基本的な使い方（言語を明示的に指定）
-./setup-env.rb --lang python my-project
-./setup-env.rb --lang ruby my-project
-
-# 短縮形
-./setup-env.rb -l python my-project
-./setup-env.rb -l ruby my-project
-
-# バージョン指定
-./setup-env.rb -l python -v 3.12 my-project
-./setup-env.rb -l ruby -v 3.2 my-project
-
-# MCP設定（明示的に指定）
-./setup-env.rb --lang python --mcp work my-work-project
-./setup-env.rb --lang ruby --mcp personal my-project
-
-# 既存プロジェクト（言語自動検出）
-cd existing-project
-/path/to/setup-env.rb .
-
-# MCP自動検出（ディレクトリベース）
-./setup-env.rb -l python ~/Projects/work-project    # 自動的に --mcp work が適用
-./setup-env.rb -l python ~/Dev/personal-project     # 自動的に --mcp personal が適用
-
-# カスタム仮想環境ディレクトリ
-./setup-env.rb -l python --venv-dir .venv-custom my-project
-
-# ヘルプを表示
-./setup-env.rb --help
-```
-
-**機能**:
-- **言語の自動検出**: `pyproject.toml` で Python、`Gemfile` で Ruby を自動検出
-- **MCP の自動検出**: プロジェクトディレクトリに基づいて自動的に MCP 設定を推測
-  - `~/Projects/*` → work（GitHub Enterprise）
-  - `~/Dev/*` → personal（GitHub.com）
-  - その他のディレクトリ → MCP 設定なし
-- **MCP 衝突検出**: 明示的に指定した MCP がディレクトリ推測と異なる場合、警告を表示
-- **非対話モード対応**: CI/自動化環境で言語選択をスキップ（デフォルトは Python）
-- **言語固有のファイル構造を自動生成**: pyproject.toml、Gemfile、README.md、.gitignoreなど
-- **direnv 設定と MCP 統合に対応**
-
-### check-python-env.sh
-
-Python仮想環境を検索・確認するツールです。
-
-```bash
-# 基本的な使い方
-./check-python-env.sh ~/Dev
-
-# 深さを制限（最大3階層まで）
-./check-python-env.sh -d 3 ~/Dev
-
-# カレントディレクトリを検索
-./check-python-env.sh .
-
-# カラー出力を無効化
-./check-python-env.sh --no-color ~/Dev
-
-# ヘルプを表示
-./check-python-env.sh --help
-```
-
-**出力例**:
-```
-Searching for Python virtual environments in: /Users/junya/Dev
-  [venv] /Users/junya/Dev/iij-cf/.venv (Python 3.12.5)
-  [uv]   /Users/junya/Dev/util-scripts/.venv (Python 3.13.8)
-Found 2 environments: 1 uv, 1 venv
-```
-
-**機能**:
-- `uv`で作成された仮想環境は`[uv]`（シアン色）で表示
-- `venv`/`virtualenv`で作成された仮想環境は`[venv]`（緑色）で表示
-- Pythonバージョンを自動検出（`pyvenv.cfg`から読み取り）
-- サマリーで環境タイプごとの数を表示
-
-### llm-evaluator.py
-
-OpenAI互換APIでアクセスできるLLMのトークン生成速度を評価するツールです。
-
-```bash
-# 基本的な使い方（OpenAI API）
-./llm-evaluator.py --api-key YOUR_API_KEY --model gpt-3.5-turbo
-
-# LiteLLMを使用
-./llm-evaluator.py --api-key YOUR_KEY --base-url http://localhost:4000 --api-type litellm --model gpt-4
-
-# Ollamaを使用
-./llm-evaluator.py --api-key dummy --base-url http://localhost:11434 --api-type ollama --model llama2
-
-# カスタム設定（複数回実行、結果をJSON出力）
-./llm-evaluator.py --api-key YOUR_KEY --model gpt-4 --max-tokens 1000 --iterations 3 --output results.json
-
-# カスタムプロンプトファイルを使用
-./llm-evaluator.py --api-key YOUR_KEY --model gpt-4 --prompts-file my_prompts.json
-
-# ヘルプを表示
-./llm-evaluator.py --help
-```
-
-**機能**:
-- OpenAI、LiteLLM、Ollama APIに対応
-- 複数のテストプロンプトで自動ベンチマーク
-- トークン/秒、レスポンス時間の詳細統計（平均、中央値、標準偏差など）
-- 結果をJSONファイルにエクスポート可能
-- localhost自動変換（IPv4/IPv6問題の回避）
-
-**依存関係**:
-```bash
-# 必要なパッケージをインストール
-uv pip install -r requirements.txt
-```
-
 ## 参考資料
 
-- [setup-env.rb](./setup-env.rb) - `--help` で詳細を確認
-- [check-python-env.sh](./check-python-env.sh) - `--help` で詳細を確認
-- [llm-evaluator.py](./llm-evaluator.py) - `--help` で詳細を確認
+- 各スクリプトの使い方: `./script --help` で確認
 - [MCP_SETUP.md](./MCP_SETUP.md) - MCP の詳細設定とトラブルシューティング
 - [uv 公式ドキュメント](https://github.com/astral-sh/uv)
 - [direnv 公式ドキュメント](https://direnv.net/)
