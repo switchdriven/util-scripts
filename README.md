@@ -38,6 +38,14 @@ macOS のネットワークポート情報を取得するスクリプト。Apple
 
 詳しくは [NET-PORT.md](NET-PORT.md) を参照。
 
+### music-ctrl.rb
+
+macOS の音楽制御サービス（com.apple.rcd）を管理するユーティリティ。
+
+```bash
+./music-ctrl.rb --help
+```
+
 ### get-ssid.sh
 
 現在接続している Wi-Fi の SSID を取得するスクリプト。
