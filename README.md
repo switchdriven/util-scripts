@@ -56,6 +56,26 @@ macOS の音楽制御サービス（com.apple.rcd）を管理するユーティ�
 
 **注**: `net-port.rb` でも SSID 取得機能があります。
 
+### run-code.sh
+
+Proxifier の起動状態を検出して VS Code を起動するラッパースクリプト。
+
+```bash
+./run-code.sh --wrapper-help
+```
+
+Proxifier 起動中は自動的にプロキシ環境変数を無効化し、二重プロキシによる接続エラーを防ぎます。
+
+### run-claude.sh
+
+Proxifier の起動状態を検出して Claude Code を起動するラッパースクリプト。
+
+```bash
+./run-claude.sh --wrapper-help
+```
+
+Proxifier 起動中は自動的にプロキシ環境変数を無効化し、二重プロキシによる接続エラーを防ぎます。
+
 ### archive-folder.sh
 
 任意のディレクトリを日付付き tar.gz アーカイブでバックアップするスクリプト。
