@@ -76,6 +76,16 @@ Proxifier の起動状態を検出して Claude Code を起動するラッパー
 
 Proxifier 起動中は自動的にプロキシ環境変数を無効化し、二重プロキシによる接続エラーを防ぎます。
 
+### check-fxz.py
+
+FXZ VPN 接続時にローカルネットワーク宛のルーティングが VPN トンネルにリダイレクトされる問題を検出・修正するスクリプト。
+
+```bash
+./check-fxz.py --help
+```
+
+詳しくは [FXZ-ISSUE.md](FXZ-ISSUE.md) を参照。
+
 ### archive-folder.sh
 
 任意のディレクトリを日付付き tar.gz アーカイブでバックアップするスクリプト。
@@ -128,6 +138,7 @@ Proxifier 起動中は自動的にプロキシ環境変数を無効化し、二�
 ## ドキュメント
 
 - [CLAUDE.md](CLAUDE.md) - プロジェクト全体のガイド（Claude Code用）
+- [FXZ-ISSUE.md](FXZ-ISSUE.md) - FXZ VPN ルーティング問題の詳細
 - [MCP_SETUP.md](MCP_SETUP.md) - MCP設定の詳細ガイド
 
 ## ライセンス
