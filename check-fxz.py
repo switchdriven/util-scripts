@@ -27,6 +27,12 @@ DIRECT_NETWORKS_V4: list[ipaddress.IPv4Network] = [
 # All local networks (used for FXZ route matching)
 LOCAL_NETWORKS_V4 = GATEWAY_NETWORKS_V4 + DIRECT_NETWORKS_V4
 
+# IPv6 half-default routes that VPN adds even when IPv6 is disabled
+IPV6_HALF_DEFAULTS: list[ipaddress.IPv6Network] = [
+    ipaddress.ip_network('::/1'),
+    ipaddress.ip_network('8000::/1'),
+]
+
 
 def get_routing_table(addr_family: str) -> list[dict]:
     """Get routing table entries for the specified address family."""
@@ -153,6 +159,22 @@ def get_covered_networks(local_routes: list[dict],
     return covered
 
 
+def get_ipv6_half_default_routes(fxz_routes: list[dict]) -> list[dict]:
+    """Get IPv6 half-default routes (::/1, 8000::/1) via FXZ interface."""
+    result = []
+    for route in fxz_routes:
+        if route.get('addr_family') != 'ip_v6':
+            continue
+        dst = route.get('dst', '')
+        try:
+            net = ipaddress.ip_network(dst, strict=False)
+            if any(net == default for default in IPV6_HALF_DEFAULTS):
+                result.append(route)
+        except ValueError:
+            continue
+    return result
+
+
 def normalize_dst(dst: str, addr_family: str) -> str:
     """Remove /32 (IPv4) or /128 (IPv6) suffix from host route destinations."""
     if addr_family == 'ip_v4' and dst.endswith('/32'):
@@ -209,6 +231,9 @@ def main():
     uncovered_v4 = [net for i, net in enumerate(GATEWAY_NETWORKS_V4) if i not in covered_v4]
     uncovered_v6 = [net for i, net in enumerate(local_networks_v6) if i not in covered_v6]
 
+    # IPv6 half-default routes added by VPN (should be removed when IPv6 is disabled)
+    ipv6_half_defaults = get_ipv6_half_default_routes(fxz_routes)
+
     if args.debug:
         if uncovered_v4:
             print(f"Uncovered IPv4 networks (need route add): {[str(n) for n in uncovered_v4]}")
@@ -224,6 +249,11 @@ def main():
             else:
                 print(f'ip route del {dst} dev {chk_i}')
 
+        # Delete IPv6 half-default routes added by VPN (when IPv6 is disabled on FXZ)
+        for route in ipv6_half_defaults:
+            dst = normalize_dst(route['dst'], route['addr_family'])
+            print(f'ip -6 route del {dst} dev {chk_i}')
+
         # Add routes for all gateway-reachable local networks
         # (some may already exist via en0 and fail harmlessly)
         gw_info = get_default_gateway(chk_i)
@@ -236,6 +266,8 @@ def main():
         v4_count = sum(1 for r in local_routes if r['addr_family'] == 'ip_v4')
         v6_count = sum(1 for r in local_routes if r['addr_family'] == 'ip_v6')
         print(f"{len(local_routes)} Dst Found (IPv4: {v4_count}, IPv6: {v6_count})")
+        if ipv6_half_defaults:
+            print(f"IPv6 half-default routes via FXZ: {len(ipv6_half_defaults)} (use --fix to remove)")
 
 
 if __name__ == '__main__':
