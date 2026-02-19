@@ -19,7 +19,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **llm-evaluator.py**: LLM速度ベンチマークツール
    - OpenAI、LiteLLM、Ollama API の トークン生成速度を評価
 
-4. **MCP設定**: GitHub（個人用・会社用）と Perplexity AI の統合
+4. **proxy-env.py**: macOS システムプロキシの参照・変更ツール
+   - 自動プロキシ（PAC URL）の有効/無効切り替えと設定確認
+   - アクション: `show`（全インターフェース/単体）、`on`、`off`、`squid`、`list`
+
+5. **MCP設定**: GitHub（個人用・会社用）と Perplexity AI の統合
    - 1Password で管理したトークンを Keychain 経由で MCP サーバーに提供
    - プロジェクトローカルの `.mcp.json` で MCP サーバー設定
 
