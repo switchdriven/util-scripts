@@ -76,20 +76,20 @@ Proxifier の起動状態を検出して Claude Code を起動するラッパー
 
 Proxifier 起動中は自動的にプロキシ環境変数を無効化し、二重プロキシによる接続エラーを防ぎます。
 
-### proxy-env.py
+### proxy-env.rb
 
 macOS のシステムプロキシ（自動プロキシ設定）を参照・変更するツール。
 
 ```bash
-./proxy-env.py --help
+./proxy-env.rb --help
 ```
 
-### check-fxz.py
+### check-fxz.rb
 
 FXZ VPN 接続時にローカルネットワーク宛のルーティングが VPN トンネルにリダイレクトされる問題を検出・修正するスクリプト。
 
 ```bash
-./check-fxz.py --help
+./check-fxz.rb --help
 ```
 
 詳しくは [FXZ-ISSUE.md](FXZ-ISSUE.md) を参照。
