@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/opt/homebrew/opt/ruby@3.3/bin/ruby
 # frozen_string_literal: true
 
 # setup-env.rb

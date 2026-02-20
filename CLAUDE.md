@@ -338,6 +338,24 @@ MCPツールでエラーが発生した場合：
 - 適切なshebangを追加: `#!/usr/bin/env python3`
 - スクリプトを実行可能にする: `chmod +x script.py`
 
+#### Rubyスクリプト
+- **標準ライブラリのみで実装することを原則とする**
+  - `open3`, `optparse`, `json`, `net/http` など標準添付ライブラリを優先
+  - Homebrew Ruby（`/opt/homebrew/opt/ruby@3.3`）を使用、仮想環境なし・グローバルgem管理
+  - 外部gem（nokogiri 等）はビルドコスト・グローバル汚染・可搬性低下のリスクがある
+- **外部gemが必要になる場合は Ruby ではなく Python で実装する**
+  - Python であれば `~/Scripts/.venv` で依存管理でき、環境が分離される
+- 適切なshebangを追加: `#!/opt/homebrew/opt/ruby@3.3/bin/ruby`
+  - `#!/usr/bin/env ruby` は使わない（AppleScript 等から呼ばれると古い system Ruby が使われるため）
+  - Ruby をバージョンアップする際は全 `.rb` の shebang を一括置換すること:
+    ```bash
+    grep -rl "^#!/opt/homebrew/opt/ruby@3.3/bin/ruby" . --include="*.rb" --exclude-dir=".gems" \
+      | xargs sed -i '' 's|ruby@3.3|ruby@3.4|g'
+    ```
+  - **新規スクリプト作成前に `brew outdated ruby@3.3` で新バージョンを確認すること**
+- `# frozen_string_literal: true` を先頭に追加
+- スクリプトを実行可能にする: `chmod +x script.rb`
+
 #### シェルスクリプト
 - 移植性のためbashを使用
 - 適切なshebangを追加: `#!/usr/bin/env bash`

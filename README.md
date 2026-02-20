@@ -84,6 +84,14 @@ macOS のシステムプロキシ（自動プロキシ設定）を参照・変�
 ./proxy-env.rb --help
 ```
 
+### check-proxy.rb
+
+プロキシサーバー経由の HTTP 接続を確認するツール。ISP 情報の取得にも対応。
+
+```bash
+./check-proxy.rb --help
+```
+
 ### check-fxz.rb
 
 FXZ VPN 接続時にローカルネットワーク宛のルーティングが VPN トンネルにリダイレクトされる問題を検出・修正するスクリプト。
