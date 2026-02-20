@@ -6,34 +6,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 このリポジトリ（`util-scripts`）は、各種ヘルパースクリプトやツールを含むユーティリティスクリプト集です。
 
-### 主な機能
-
-1. **setup-env.rb**: 統合開発環境セットアップスクリプト（推奨）
-   - Python、Ruby、None（言語なし）の3つの言語に対応
-   - 言語の自動検出と `direnv`、MCP サーバーの自動セットアップ
-   - **None 言語**: JXA や シェルスクリプト専用プロジェクト向け
-
-2. **check-python-env.sh**: Python仮想環境の検索・確認ツール
-   - 指定ディレクトリ以下の全仮想環境を再帰的に検索・判別
-
-3. **llm-evaluator.py**: LLM速度ベンチマークツール
-   - OpenAI、LiteLLM、Ollama API の トークン生成速度を評価
-
-4. **proxy-env.py**: macOS システムプロキシの参照・変更ツール
-   - 自動プロキシ（PAC URL）の有効/無効切り替えと設定確認
-   - アクション: `show`（全インターフェース/単体）、`on`、`off`、`squid`、`list`
-
-5. **MCP設定**: GitHub（個人用・会社用）と Perplexity AI の統合
-   - 1Password で管理したトークンを Keychain 経由で MCP サーバーに提供
-   - プロジェクトローカルの `.mcp.json` で MCP サーバー設定
+各スクリプトの機能については [README.md](README.md) を参照してください。
 
 ## 開発環境
 
 ### Python環境
 - Python仮想環境は`uv`で管理
 - デフォルトのPythonバージョン: 3.13
-- 仮想環境の場所: `.venv/`（カスタマイズ可能）
 - 環境のアクティベーションは`direnv`が`.envrc`経由で自動実行
+
+#### このリポジトリに `.venv` を作らない理由
+
+このリポジトリの Python スクリプトは `~/Scripts/Python/` にシンボリックリンクを貼って運用しています。
+実行時は `~/Scripts/.venv` が activate された状態になるため、このリポジトリ自体には仮想環境は不要です。
+
+`pyproject.toml` は依存ライブラリの記録として残していますが、実際のパッケージ管理は `~/Scripts/.venv` に対して `uv pip install` で行います。
+
+**`setup-env.rb` でこのリポジトリに `.venv` を作らないこと。** 作ると `~/Scripts/.venv` が上書きされ、スクリプトの実行環境が壊れます。
+
+#### `.envrc` の構成
+
+`.envrc` に `source ~/Scripts/.venv/bin/activate` を追加しています。これにより：
+
+- `cd` 時に `VIRTUAL_ENV=/Users/junya/Scripts/.venv` が設定される
+- `uv-maint.rb` がデフォルトで `VIRTUAL_ENV` を参照して正しい仮想環境を対象にする
+- 各プロジェクト固有の `.venv` がある場合はそちらが優先される（direnv が上書き）
 
 ### 必須ツール
 - **uv**: Python仮想環境管理ツール
