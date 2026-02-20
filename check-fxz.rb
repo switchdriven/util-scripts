@@ -54,16 +54,16 @@ class FxzChecker
   def run
     chk_i = @netif || get_fxz_interface
     unless chk_i
-      puts 'No FXZ interface found.'
+      warn 'No FXZ interface found.'
       exit 1
     end
 
     local_networks_v6 = get_local_ipv6_networks('en0')
 
     if @debug
-      puts "FXZ interface = #{chk_i}"
-      puts "Local IPv4 networks = #{LOCAL_NETWORKS_V4.map { |n| to_cidr(n) }}"
-      puts "Local IPv6 networks = #{local_networks_v6.map { |n| to_cidr(n) }}"
+      warn "FXZ interface = #{chk_i}"
+      warn "Local IPv4 networks = #{LOCAL_NETWORKS_V4.map { |n| to_cidr(n) }}"
+      warn "Local IPv6 networks = #{local_networks_v6.map { |n| to_cidr(n) }}"
     end
 
     fxz_routes = %w[ip_v4 ip_v6].flat_map do |af|
@@ -75,9 +75,9 @@ class FxzChecker
     end
 
     if @debug
-      puts "\nFXZ routes total: #{fxz_routes.length}"
-      puts "Local routes to fix: #{local_routes.length}"
-      local_routes.each { |r| pp r }
+      warn "\nFXZ routes total: #{fxz_routes.length}"
+      warn "Local routes to fix: #{local_routes.length}"
+      local_routes.each { |r| warn r.inspect }
     end
 
     covered_v4 = covered_indices(local_routes, GATEWAY_NETWORKS_V4)
@@ -86,8 +86,8 @@ class FxzChecker
     if @debug
       uncovered_v4 = GATEWAY_NETWORKS_V4.each_with_index.reject { |_, i| covered_v4.include?(i) }.map(&:first)
       uncovered_v6 = local_networks_v6.each_with_index.reject { |_, i| covered_v6.include?(i) }.map(&:first)
-      puts "Uncovered IPv4 networks (need route add): #{uncovered_v4.map { |n| to_cidr(n) }}" unless uncovered_v4.empty?
-      puts "Uncovered IPv6 networks (need route add): #{uncovered_v6.map { |n| to_cidr(n) }}" unless uncovered_v6.empty?
+      warn "Uncovered IPv4 networks (need route add): #{uncovered_v4.map { |n| to_cidr(n) }}" unless uncovered_v4.empty?
+      warn "Uncovered IPv6 networks (need route add): #{uncovered_v6.map { |n| to_cidr(n) }}" unless uncovered_v6.empty?
     end
 
     ipv6_half_defaults = ipv6_half_default_routes(fxz_routes)
