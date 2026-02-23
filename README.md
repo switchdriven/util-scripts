@@ -102,6 +102,46 @@ FXZ VPN 接続時にローカルネットワーク宛のルーティングが VP
 
 詳しくは [FXZ-ISSUE.md](FXZ-ISSUE.md) を参照。
 
+### check-squid.rb
+
+Squid プロキシの設定ファイル（シンボリックリンク）を切り替え、サービスの再起動・再設定を行うツール。
+
+```bash
+./check-squid.rb --help
+```
+
+### show-ip.rb
+
+macOS のネットワークインターフェースの IP アドレス・MACアドレス・フラグ等を表示するツール。
+
+```bash
+./show-ip.rb --help
+```
+
+### show-port.rb
+
+lsof を使って現在開いているネットワーク接続・ポートを表示するツール。
+
+```bash
+./show-port.rb --help
+```
+
+### show-services.rb
+
+macOS の networksetup コマンドからネットワークサービス名とデバイス名の対応表を取得するツール。自動プロキシ設定の確認にも対応。
+
+```bash
+./show-services.rb --help
+```
+
+### check-sign.sh
+
+pyHanko を使って PDF ファイルのデジタル署名を検証するスクリプト。
+
+```bash
+./check-sign.sh --help
+```
+
 ### uv-maint.rb
 
 uv 管理の Python 仮想環境のパッケージをメンテナンスするツール。古いパッケージの確認・更新、依存関係チェック、孤立パッケージの検出ができます。対象の仮想環境は `$VIRTUAL_ENV` を自動参照します（`-p` で明示指定も可能）。
