@@ -38,12 +38,6 @@ DIRECT_NETWORKS_V4 = [
 # All local networks (used for FXZ route matching)
 LOCAL_NETWORKS_V4 = (GATEWAY_NETWORKS_V4 + DIRECT_NETWORKS_V4).freeze
 
-# IPv6 half-default routes that VPN adds even when IPv6 is disabled
-IPV6_HALF_DEFAULTS = [
-  IPAddr.new('::/1'),
-  IPAddr.new('8000::/1')
-].freeze
-
 class FxzChecker
   def initialize(debug: false, fix: false, netif: nil)
     @debug = debug
@@ -58,49 +52,48 @@ class FxzChecker
       exit 1
     end
 
-    local_networks_v6 = get_local_ipv6_networks('en0')
-
     if @debug
       warn "FXZ interface = #{chk_i}"
       warn "Local IPv4 networks = #{LOCAL_NETWORKS_V4.map { |n| to_cidr(n) }}"
-      warn "Local IPv6 networks = #{local_networks_v6.map { |n| to_cidr(n) }}"
     end
 
     fxz_routes = %w[ip_v4 ip_v6].flat_map do |af|
       get_routing_table(af).select { |r| r['dev'] == chk_i }
     end
 
-    local_routes = fxz_routes.select do |route|
-      local_route?(route['dst'], LOCAL_NETWORKS_V4, local_networks_v6)
+    # IPv4: only routes that fall within defined local networks
+    local_routes_v4 = fxz_routes.select do |route|
+      route['addr_family'] == 'ip_v4' && local_route_v4?(route['dst'])
+    end
+
+    # IPv6: all routes via FXZ interface are removed (FXZ hijacks all IPv6 traffic).
+    # Exclude link-local (fe80::/10) and multicast (ff00::/8) — interface-scoped, cannot be deleted.
+    all_routes_v6 = fxz_routes.select do |r|
+      next false unless r['addr_family'] == 'ip_v6'
+
+      net = parse_ip_network(r['dst'])
+      net && !net.link_local? && !IPAddr.new('ff00::/8').include?(net)
     end
 
     if @debug
       warn "\nFXZ routes total: #{fxz_routes.length}"
-      warn "Local routes to fix: #{local_routes.length}"
-      local_routes.each { |r| warn r.inspect }
+      warn "Local IPv4 routes to fix: #{local_routes_v4.length}"
+      warn "IPv6 routes to remove (all): #{all_routes_v6.length}"
+      local_routes_v4.each { |r| warn r.inspect }
+      all_routes_v6.each { |r| warn r.inspect }
     end
-
-    covered_v4 = covered_indices(local_routes, GATEWAY_NETWORKS_V4)
-    covered_v6 = covered_indices(local_routes, local_networks_v6)
 
     if @debug
+      covered_v4 = covered_indices(local_routes_v4, GATEWAY_NETWORKS_V4)
       uncovered_v4 = GATEWAY_NETWORKS_V4.each_with_index.reject { |_, i| covered_v4.include?(i) }.map(&:first)
-      uncovered_v6 = local_networks_v6.each_with_index.reject { |_, i| covered_v6.include?(i) }.map(&:first)
       warn "Uncovered IPv4 networks (need route add): #{uncovered_v4.map { |n| to_cidr(n) }}" unless uncovered_v4.empty?
-      warn "Uncovered IPv6 networks (need route add): #{uncovered_v6.map { |n| to_cidr(n) }}" unless uncovered_v6.empty?
     end
 
-    ipv6_half_defaults = ipv6_half_default_routes(fxz_routes)
-
     if @fix
-      output_fix_commands(local_routes, ipv6_half_defaults, chk_i)
+      output_fix_commands(local_routes_v4, all_routes_v6, chk_i)
     else
-      v4_count = local_routes.count { |r| r['addr_family'] == 'ip_v4' }
-      v6_count = local_routes.count { |r| r['addr_family'] == 'ip_v6' }
-      puts "#{local_routes.length} Dst Found (IPv4: #{v4_count}, IPv6: #{v6_count})"
-      if ipv6_half_defaults.any?
-        puts "IPv6 half-default routes via FXZ: #{ipv6_half_defaults.length} (use --fix to remove)"
-      end
+      puts "IPv4: #{local_routes_v4.length} local route(s) via FXZ"
+      puts "IPv6: #{all_routes_v6.length} route(s) via FXZ (all will be removed with --fix)"
     end
   end
 
@@ -129,43 +122,11 @@ class FxzChecker
     nil
   end
 
-  def get_local_ipv6_networks(interface = 'en0')
-    out, status = Open3.capture2(IP_COMMAND, '-j', '-6', 'addr', 'show', interface)
-    return [] unless status.success?
-
-    networks = []
-    JSON.parse(out).each do |iface|
-      iface.fetch('addr_info', []).each do |addr_info|
-        addr_str  = addr_info['local']
-        prefixlen = addr_info['prefixlen'] || 64
-
-        next if addr_str.nil? || addr_str.empty?
-
-        addr = IPAddr.new(addr_str)
-        next if addr.link_local?
-
-        # Normalize to /64 if prefix is longer
-        prefixlen = 64 if prefixlen > 64
-        network = IPAddr.new(addr_str).mask(prefixlen)
-        networks << network unless networks.include?(network)
-      rescue IPAddr::InvalidAddressError
-        next
-      end
-    end
-    networks
-  rescue JSON::ParserError
-    []
-  end
-
-  def local_route?(dst, local_networks_v4, local_networks_v6)
+  def local_route_v4?(dst)
     net = parse_ip_network(dst)
-    return false unless net
+    return false unless net&.ipv4?
 
-    if net.ipv4?
-      local_networks_v4.any? { |local| subnet_of?(local, net) }
-    else
-      local_networks_v6.any? { |local| subnet_of?(local, net) }
-    end
+    LOCAL_NETWORKS_V4.any? { |local| subnet_of?(local, net) }
   end
 
   def get_default_gateway(fxz_interface)
@@ -195,29 +156,16 @@ class FxzChecker
     covered
   end
 
-  def ipv6_half_default_routes(fxz_routes)
-    fxz_routes.select do |route|
-      next false unless route['addr_family'] == 'ip_v6'
+  def output_fix_commands(local_routes_v4, all_routes_v6, chk_i)
+    return if local_routes_v4.empty? && all_routes_v6.empty?
 
-      net = parse_ip_network(route['dst'])
-      next false unless net
-
-      IPV6_HALF_DEFAULTS.any? { |half| net == half }
-    end
-  end
-
-  def output_fix_commands(local_routes, ipv6_half_defaults, chk_i)
-    local_routes.each do |route|
-      dst = normalize_dst(route['dst'], route['addr_family'])
-      if route['addr_family'] == 'ip_v6'
-        puts "ip -6 route del #{dst} dev #{chk_i}"
-      else
-        puts "ip route del #{dst} dev #{chk_i}"
-      end
+    local_routes_v4.each do |route|
+      dst = normalize_dst(route['dst'], 'ip_v4')
+      puts "ip route del #{dst} dev #{chk_i}"
     end
 
-    ipv6_half_defaults.each do |route|
-      dst = normalize_dst(route['dst'], route['addr_family'])
+    all_routes_v6.each do |route|
+      dst = normalize_dst(route['dst'], 'ip_v6')
       puts "ip -6 route del #{dst} dev #{chk_i}"
     end
 
