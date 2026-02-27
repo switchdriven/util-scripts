@@ -174,6 +174,22 @@ uv 管理の Python 仮想環境のパッケージをメンテナンスするツ
 ./archive-folder.sh --help
 ```
 
+### mcp-keychain-setting.sh
+
+1Password から MCP サーバー用 API トークンを取得して macOS Keychain に登録するスクリプト。
+
+```bash
+./mcp-keychain-setting.sh
+```
+
+### mcp-tavily.sh
+
+Keychain から Tavily API キーを取得して Tavily MCP サーバーを起動するラッパースクリプト。
+
+```bash
+./mcp-tavily.sh
+```
+
 ## 必須ツール
 
 ### Ruby環境（setup-ruby-env.rb使用時）

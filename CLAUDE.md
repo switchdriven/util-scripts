@@ -98,185 +98,16 @@ source .venv/bin/activate          # Python
 source .venv/bin/activate.sh       # Ruby
 ```
 
-## MCP（Model Context Protocol）設定
+## MCP（Model Context Protocol）
+
+詳細な設定方法については [MCP_SETUP.md](MCP_SETUP.md) を参照してください。
 
 ### GitHubアカウント情報
 
-- **会社用GitHub Enterprise**
-  - ドメイン: `gh.iiji.jp`
-  - ユーザー名: `juny-s`
-  - MCPサーバー名: `github-work`
-  - 環境変数: `GITHUB_USERNAME=juny-s`（`.envrc`で自動設定）
+- **会社用GitHub Enterprise**: ドメイン `gh.iiji.jp`、ユーザー名 `juny-s`（MCPサーバー名: `github-work`）
+- **個人用GitHub.com**: ドメイン `github.com`、ユーザー名 `switchdriven`（MCPサーバー名: `github-personal`）
 
-- **個人用GitHub.com**
-  - ドメイン: `github.com`
-  - ユーザー名: `switchdriven`
-  - MCPサーバー名: `github-personal`
-  - 環境変数: `GITHUB_USERNAME=switchdriven`（`.envrc`で自動設定）
-
-`setup-env.rb` で MCP 設定を指定すると、`.envrc` に自動的に GitHub ユーザー名が設定されます。
-Claude Code はこのユーザー名を使ってMCP検索を行います。
-
-### MCPサーバーの実装
-
-- **MCPサーバー**: `~/Dev/github-mcp-server/github-mcp-server`（GitHub公式、Go実装）
-- **トークン管理**: 1Password → macOS Keychain → MCPサーバー
-- **ラッパースクリプト**: `~/Scripts/Shell/mcp-github-personal.sh` と `~/Scripts/Shell/mcp-github-work.sh`
-- **設定管理**: プロジェクトローカルの `.mcp.json` ファイル（バージョン管理対象）
-
-### MCPサーバーの種類
-
-1. **github-work**: 会社用GitHub Enterprise
-   - 対象: `gh.iiji.jp`
-   - ユーザー名: `juny-s`
-   - 1Password: `op://Personal/GitHubEnt For MCP/token`
-   - Keychain: `github-work-token`
-   - ラッパー: `~/Scripts/Shell/mcp-github-work.sh`
-
-2. **github-personal**: 個人用GitHub.com
-   - 対象: `github.com`
-   - ユーザー名: `switchdriven`
-   - 1Password: `op://Personal/GitHub For MCP/token`
-   - Keychain: `github-personal-token`
-   - ラッパー: `~/Scripts/Shell/mcp-github-personal.sh`
-
-3. **perplexity**: Perplexity AI
-   - サービス: Perplexity API
-   - 1Password: `op://Personal/Perplexity API/credential`
-   - Keychain: `perplexity-token`
-   - ラッパー: `~/Scripts/Shell/mcp-perplexity.sh`
-
-### Keychain トークン管理
-
-API トークンは 1Password で管理し、`mcp-keychain-setting.sh` スクリプトで Keychain に同期しています。
-
-#### トークンの初期化
-
-1Password のトークンを Keychain に同期：
-
-```bash
-./mcp-keychain-setting.sh
-```
-
-GitHub（personal・work）と Perplexity のトークンを一括で Keychain に格納・検証します。
-
-#### 手動でのトークン設定
-
-Keychain に直接トークンを設定することも可能です：
-
-```bash
-# GitHub personal
-security add-generic-password \
-  -s "github-personal-token" \
-  -a "$(whoami)" \
-  -w "YOUR_GITHUB_PERSONAL_TOKEN"
-
-# GitHub work
-security add-generic-password \
-  -s "github-work-token" \
-  -a "$(whoami)" \
-  -w "YOUR_GITHUB_WORK_TOKEN"
-
-# Perplexity
-security add-generic-password \
-  -s "perplexity-token" \
-  -a "$(whoami)" \
-  -w "YOUR_PERPLEXITY_API_KEY"
-```
-
-#### トークンの確認
-
-Keychain に格納されたトークンを確認します：
-
-```bash
-security find-generic-password -w -s "github-personal-token"
-security find-generic-password -w -s "github-work-token"
-security find-generic-password -w -s "perplexity-token"
-```
-
-### プロジェクトローカルMCP設定
-
-`setup-env.rb` で MCP を設定すると、プロジェクトルートに `.mcp.json` が自動生成されます。
-
-```json
-{
-  "mcpServers": {
-    "github-personal": {
-      "command": "/Users/junya/Scripts/Shell/mcp-github-personal.sh",
-      "args": [],
-      "env": {}
-    }
-  }
-}
-```
-
-**重要**:
-- `.mcp.json` はプロジェクトルートに配置（git コミット対象）
-- `.claude/` は `.gitignore` に含める
-
-### MCP 設定フロー
-
-#### GitHub MCP の自動検出
-
-ディレクトリ位置に基づいて自動検出・確認します：
-
-```bash
-# ~/Dev/* → personal が推測される（確認あり）
-./setup-env.rb -l python ~/Dev/my-project
-
-# ~/Projects/* → work が推測される（確認あり）
-./setup-env.rb -l python ~/Projects/my-project
-
-# 上記以外 → MCP選択肢が提示される
-./setup-env.rb -l python ~/other/my-project
-```
-
-**挙動：**
-
-1. **自動検出段階**: ディレクトリ位置から GitHub MCP を推測
-2. **ユーザー確認**: 推測結果に対して「この設定を使う？」と確認
-   - 「yes」: その MCP が設定される
-   - 「no」: 選択肢メニューが表示される
-3. **選択肢メニュー**（確認なし or 推測失敗時）:
-   ```
-   Do you want to configure an MCP server?
-     1) GitHub Enterprise (work) - gh.iiji.jp
-     2) GitHub Personal (personal) - github.com
-     3) Perplexity AI (perplexity)
-     4) None (skip MCP setup)
-   ```
-
-#### 明示的指定
-
-```bash
-./setup-env.rb --lang python --mcp work my-project        # GitHub work
-./setup-env.rb --lang python --mcp personal my-project    # GitHub personal
-./setup-env.rb --lang python --mcp perplexity my-project  # Perplexity
-./setup-env.rb --lang python my-project                   # MCP設定なし
-```
-
-#### 非対話モード
-
-対話入力がない場合（CI環境など）:
-- 自動検出後の確認で入力がない → MCP設定なし
-- 選択肢メニューで入力がない → MCP設定なし
-
-#### Perplexity の使用方法
-
-**MCP 経由でPerplexity を使う場合**:
-
-```bash
-./setup-env.rb --lang python --mcp perplexity my-project
-# → .mcp.json に perplexity サーバーが自動追加される
-```
-
-**MCP 経由しない場合**（直接 API 使用など）:
-- 手動設定は不要
-- プロジェクトコードから直接 Perplexity API を呼び出し
-
-### 詳細なMCP設定
-
-詳細な設定方法とトラブルシューティングについては[MCP_SETUP.md](MCP_SETUP.md)を参照してください。
+`setup-env.rb` で MCP 設定を指定すると、`.envrc` に `GITHUB_USERNAME` が自動設定されます。
 
 ### GitHub操作のポリシー
 
@@ -417,32 +248,7 @@ MCPツールでエラーが発生した場合：
 
 ### MCPサーバーが接続できない
 
-詳細な設定とトラブルシューティングについては[MCP_SETUP.md](MCP_SETUP.md)を参照してください。
-
-簡易チェックリスト：
-
-1. **Keychain にトークンが登録されているか確認**:
-   ```bash
-   security find-generic-password -s "github-personal-token"
-   ```
-
-2. **1Password CLI が認証されているか確認**:
-   ```bash
-   op account list
-   ```
-
-3. **ラッパースクリプトが実行可能か確認**:
-   ```bash
-   ls -l ~/Dev/util-scripts/mcp-github.sh
-   # -rwxr-xr-x であることを確認
-   ```
-
-4. **MCPサーバーが登録されているか確認**:
-   ```bash
-   claude mcp list
-   ```
-
-5. **Claude Code を再起動**: 設定変更後は必ず再起動してください
+[MCP_SETUP.md](MCP_SETUP.md) のトラブルシューティングを参照してください。
 
 ## 参考資料
 

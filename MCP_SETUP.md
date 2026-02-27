@@ -28,7 +28,7 @@ MCPサーバーとしては、`~/Dev/github-mcp-server`にある公式のGitHub 
 - **対象**: GitHub Enterprise (`https://gh.iiji.jp`)
 - **ユーザー名**: `juny-s`
 - **1Password**: `op://Personal/GitHubEnt For MCP/token`
-- **Keychain**: `github-work-token`（`mcp-github-setting.sh`で同期）
+- **Keychain**: `github-work-token`（`mcp-keychain-setting.sh`で同期）
 - **ラッパースクリプト**: `~/Scripts/Shell/mcp-github-work.sh`
 - **環境変数**: `GITHUB_USERNAME=juny-s`（`.envrc`で自動設定）
 - **利用可能な機能**: repos, issues, pull_requests, actions
@@ -38,10 +38,17 @@ MCPサーバーとしては、`~/Dev/github-mcp-server`にある公式のGitHub 
 - **対象**: GitHub.com (`https://github.com`)
 - **ユーザー名**: `switchdriven`
 - **1Password**: `op://Personal/GitHub For MCP/token`
-- **Keychain**: `github-personal-token`（`mcp-github-setting.sh`で同期）
+- **Keychain**: `github-personal-token`（`mcp-keychain-setting.sh`で同期）
 - **ラッパースクリプト**: `~/Scripts/Shell/mcp-github-personal.sh`
 - **環境変数**: `GITHUB_USERNAME=switchdriven`（`.envrc`で自動設定）
 - **利用可能な機能**: repos, issues, pull_requests, actions
+
+### 3. Tavily（`tavily`）
+
+- **対象**: Tavily Search API
+- **1Password**: `op://Personal/Tavily API/credential`
+- **Keychain**: `tavily-token`（`mcp-keychain-setting.sh`で同期）
+- **ラッパースクリプト**: `~/Scripts/Shell/mcp-tavily.sh`
 
 ## アーキテクチャ
 
@@ -49,7 +56,7 @@ MCPサーバーとしては、`~/Dev/github-mcp-server`にある公式のGitHub 
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ 初期セットアップ: mcp-github-setting.sh を実行                  │
+│ 初期セットアップ: mcp-keychain-setting.sh を実行                  │
 ├──────────────────────────────────────────────────────────────┤
 │                                                               │
 │  1. 1Password から API トークン取得                            │
@@ -120,7 +127,7 @@ exec $GITHUB_MCP_SERVER_PATH stdio
 
 ```bash
 # 実行
-~/Scripts/Shell/mcp-github-setting.sh
+~/Scripts/Shell/mcp-keychain-setting.sh
 
 # 出力例
 [INFO] Syncing GitHub tokens from 1Password to Keychain...
@@ -232,7 +239,7 @@ or
 1Passwordでトークンが更新されたときは、以下を実行してKeychainを更新します：
 
 ```bash
-~/Scripts/Shell/mcp-github-setting.sh
+~/Scripts/Shell/mcp-keychain-setting.sh
 ```
 
 ## トラブルシューティング
@@ -246,7 +253,7 @@ or
 1. **Keychain にトークンが保存されていない**
    ```bash
    security find-generic-password -s "github-personal-token"
-   # エラーが出た場合は、mcp-github-setting.sh を実行
+   # エラーが出た場合は、mcp-keychain-setting.sh を実行
    ```
 
 2. **ラッパースクリプトが実行できない**
@@ -281,7 +288,7 @@ or
 security dump-keychain ~/Library/Keychains/login.keychain-db | grep github
 
 # トークンを再同期
-~/Scripts/Shell/mcp-github-setting.sh
+~/Scripts/Shell/mcp-keychain-setting.sh
 
 # Keychainの詳細確認
 security find-generic-password -s "github-personal-token" -v
@@ -319,16 +326,22 @@ util-scripts/
 ├── setup-env.rb                  # 統合開発環境セットアップ（推奨、MCP対応）
 ├── setup-python-env.rb           # Python環境セットアップ（MCP対応）
 ├── setup-ruby-env.rb             # Ruby環境セットアップ（MCP対応）
+├── mcp-keychain-setting.sh       # トークン同期スクリプト（1Password → Keychain）
 ├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
 ├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
-├── mcp-github-setting.sh         # トークン同期スクリプト（1Password → Keychain）
+├── mcp-perplexity.sh             # Perplexity MCP ラッパー
+├── mcp-gemini-search.sh          # Gemini Search MCP ラッパー
+├── mcp-tavily.sh                 # Tavily MCP ラッパー
 ├── MCP_SETUP.md                  # このファイル
 └── CLAUDE.md                     # プロジェクトガイド
 
 ~/Scripts/Shell/
-├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用、util-scriptsへのコピー）
-├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用、util-scriptsへのコピー）
-└── mcp-github-setting.sh         # トークン同期スクリプト（util-scriptsへのコピー）
+├── mcp-keychain-setting.sh       # トークン同期スクリプト（util-scriptsへのシンボリックリンク）
+├── mcp-github-personal.sh        # GitHub MCP ラッパー（個人用）
+├── mcp-github-work.sh            # GitHub MCP ラッパー（会社用）
+├── mcp-perplexity.sh             # Perplexity MCP ラッパー
+├── mcp-gemini-search.sh          # Gemini Search MCP ラッパー
+└── mcp-tavily.sh                 # Tavily MCP ラッパー
 
 ~/Dev/github-mcp-server/
 ├── github-mcp-server             # MCPサーバー本体

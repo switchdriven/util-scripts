@@ -8,6 +8,8 @@
 # 対応サービス:
 #   - GitHub (個人用・会社用)
 #   - Perplexity
+#   - Gemini
+#   - Tavily
 
 echo "Getting keys from 1password"
 
@@ -21,11 +23,15 @@ PERPLEXITY_API_KEY=$(op read "op://Personal/Perplexity API/credential")
 # Gemini API キー
 GEMINI_API_KEY=$(op read "op://Personal/bukkfg4ju6m54ln3xw7vwbblry/credential")
 
+# Tavily API キー
+TAVILY_API_KEY=$(op read "op://Personal/Tavily API/credential")
+
 echo "Delete current keys"
 security delete-generic-password -s "github-personal-token" > /dev/null 2>&1
 security delete-generic-password -s "github-work-token" > /dev/null 2>&1
 security delete-generic-password -s "perplexity-token" > /dev/null 2>&1
 security delete-generic-password -s "gemini-token" > /dev/null 2>&1
+security delete-generic-password -s "tavily-token" > /dev/null 2>&1
 
 echo "Setting tokens to keychain"
 
@@ -52,6 +58,12 @@ security add-generic-password \
   -s "gemini-token" \
   -a "$(whoami)" \
   -w "$GEMINI_API_KEY"
+
+# Tavily API キー
+security add-generic-password \
+  -s "tavily-token" \
+  -a "$(whoami)" \
+  -w "$TAVILY_API_KEY"
 
 echo "Verifying tokens"
 
@@ -85,6 +97,15 @@ fi
 TOKEN_GEMINI=$(security find-generic-password -w -s "gemini-token")
 printf "Check gemini-token .. "
 if [ "$TOKEN_GEMINI" != "$GEMINI_API_KEY" ]; then
+    echo "NG"
+    exit 1
+else
+    echo "OK"
+fi
+
+TOKEN_TAVILY=$(security find-generic-password -w -s "tavily-token")
+printf "Check tavily-token .. "
+if [ "$TOKEN_TAVILY" != "$TAVILY_API_KEY" ]; then
     echo "NG"
     exit 1
 else
