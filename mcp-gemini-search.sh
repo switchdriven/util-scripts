@@ -4,7 +4,7 @@
 # Keychain から API キーを取得して MCP サーバーを起動
 
 API_KEY=$(security find-generic-password -w -s "gemini-token")
-PROJECT_DIR=/Users/junya/Dev/google-search-mcp
+PROJECT_DIR=/Users/junya/Dev/gemini-search-mcp
 
 if [ -z "$API_KEY" ]; then
     echo "Error: Gemini API key not found in Keychain" >&2
