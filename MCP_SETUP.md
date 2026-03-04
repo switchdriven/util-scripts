@@ -50,6 +50,42 @@ MCPサーバーとしては、`~/Dev/github-mcp-server`にある公式のGitHub 
 - **Keychain**: `tavily-token`（`mcp-keychain-setting.sh`で同期）
 - **ラッパースクリプト**: `~/Scripts/Shell/mcp-tavily.sh`
 
+### 4. Gemini Search（`gemini-search`）
+
+- **対象**: Google Gemini API（Google Search Grounding 機能）
+- **1Password**: `op://Personal/bukkfg4ju6m54ln3xw7vwbblry/credential`
+- **Keychain**: `gemini-token`（`mcp-keychain-setting.sh`で同期）
+- **ラッパースクリプト**: `~/Scripts/Shell/mcp-gemini-search.sh`
+- **サーバー本体**: `~/Dev/gemini-search-mcp/mcp_server.py`
+
+#### 料金プランの経緯
+
+- 当初は無料プラン（Free tier）で利用
+- 2026年3月、Google AI Studio で **請求アカウント付きプラン（Pay-as-you-go）** に移行
+  - 移行理由: 無料プランよりも高いレート制限、商用利用の明確化
+  - 参考: [Gemini API Rate Limits](https://ai.dev/rate-limit)
+
+#### 日次リクエスト上限
+
+MCP サーバー側でアプリケーションレベルの日次上限を設けている（Gemini API 側の課金抑制のため）。
+
+| 設定項目 | 値 | 説明 |
+|---------|---|------|
+| `DAILY_REQUEST_LIMIT` | `300` | 1日あたりの最大リクエスト数 |
+| カウンターファイル | `~/.gemini_search_mcp_counter.json` | 当日のリクエスト数を記録 |
+
+上限を変更する場合は `mcp-gemini-search.sh` の `DAILY_REQUEST_LIMIT` を編集する（300 → 500 など）。様子を見て必要に応じて引き上げる方針。
+
+詳細は [`~/Dev/gemini-search-mcp/README.md`](~/Dev/gemini-search-mcp/README.md) を参照。
+
+### 5. Perplexity（`perplexity`）
+
+- **対象**: Perplexity AI API
+- **1Password**: `op://Personal/Perplexity API/credential`
+- **Keychain**: `perplexity-token`（`mcp-keychain-setting.sh`で同期）
+- **ラッパースクリプト**: `~/Scripts/Shell/mcp-perplexity.sh`
+- **起動コマンド**: `perplexity-mcp`（npm パッケージ）
+
 ## アーキテクチャ
 
 ### トークン管理フロー
