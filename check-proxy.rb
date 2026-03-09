@@ -15,6 +15,7 @@
 #   -n, --name NAME       Proxy server name from built-in list
 #   -l, --list            Show known proxies
 #   -i, --isp             Check which ISP the connection uses
+#   -o, --office          Check all office proxies (proxy/proxy-w/proxy-e)
 #   -h, --help            Show this help
 #
 
@@ -22,12 +23,22 @@ require 'open3'
 require 'optparse'
 
 PROXY_SERVERS = [
-  { name: 'none',   url: 'none' },                          # no proxy
-  { name: 'nuc',    url: 'http://nuc.local:3128' },         # nuc.local squid
-  { name: 'cherry', url: 'http://cherry.local:3128' },      # cherry.local squid
-  { name: 'local',  url: 'http://localhost:3128' },         # localhost squid
-  { name: 'office', url: 'http://proxy.iiji.jp:8080' },     # IIJ Office proxy
+  { name: 'none',    url: 'none' },                            # no proxy
+  { name: 'nuc',     url: 'http://nuc.local:3128' },           # nuc.local squid
+  { name: 'cherry',  url: 'http://cherry.local:3128' },        # cherry.local squid
+  { name: 'local',   url: 'http://localhost:3128' },           # localhost squid
+  { name: 'office',  url: 'http://proxy.iiji.jp:8080' },       # IIJ Office proxy (round-robin)
+  { name: 'proxy-w', url: 'http://proxy-w.iiji.jp:8080' },     # IIJ Office proxy West
+  { name: 'proxy-e', url: 'http://proxy-e.iiji.jp:8080' },     # IIJ Office proxy East
 ].freeze
+
+OFFICE_PROXIES = %w[office proxy-w proxy-e].freeze
+
+GREEN = "\e[32m"
+RED   = "\e[31m"
+CYAN  = "\e[36m"
+BOLD  = "\e[1m"
+RESET = "\e[0m"
 
 TEST_TARGET   = 'https://www.google.com'
 DETAIL_TARGET = 'https://env.b4iine.net'
@@ -47,8 +58,37 @@ rescue StandardError => e
   raise "error on reading from #{path}: #{e}"
 end
 
+def curl_check(proxy_url, target_url, body_out = '/dev/null')
+  proxy_args = proxy_url == 'none' ? [] : ['--proxy', proxy_url]
+  cmd = ['/usr/bin/curl', '--connect-timeout', '5', '-s',
+         *proxy_args, '-o', body_out, '-w', '%{http_code}\n', target_url]
+  output, status = Open3.capture2e(*cmd)
+  status.success? ? output.lines.first&.strip.to_i : 0
+end
+
+def check_office_proxies
+  puts
+  puts "#{BOLD}#{CYAN}## Office Proxy Check#{RESET}"
+  puts '=' * 60
+  pass = 0
+  fail = 0
+  OFFICE_PROXIES.each do |name|
+    entry = PROXY_SERVERS.find { |s| s[:name] == name }
+    url   = entry[:url]
+    code  = curl_check(url, TEST_TARGET)
+    ok    = code == 200
+    mark  = ok ? "#{GREEN}OK#{RESET}" : "#{RED}NG#{RESET}"
+    puts "  %-40s %s (HTTP %d)" % ["#{name} (#{url})", mark, code]
+    ok ? (pass += 1) : (fail += 1)
+  end
+  puts '=' * 60
+  color = fail.zero? ? GREEN : RED
+  puts "#{BOLD}Result: #{color}#{pass}/#{pass + fail} passed#{RESET}"
+  puts
+end
+
 def main
-  options = { debug: false, proxy: nil, name: nil, list: false, isp: false }
+  options = { debug: false, proxy: nil, name: nil, list: false, isp: false, office: false }
 
   OptionParser.new do |opts|
     opts.banner = 'Usage: check-proxy.rb [options]'
@@ -61,11 +101,17 @@ def main
             PROXY_SERVERS.map { |s| s[:name] })                   { |v| options[:name] = v }
     opts.on('-l', '--list',         'Show known proxies')         { options[:list] = true }
     opts.on('-i', '--isp',          'Check which ISP is in use')  { options[:isp] = true }
+    opts.on('-o', '--office',       'Check all office proxies (proxy/proxy-w/proxy-e)') { options[:office] = true }
     opts.on_tail('-h', '--help',    'Show this help')             { puts opts; exit 0 }
   end.parse!
 
   if options[:list]
-    PROXY_SERVERS.each { |s| puts "%-8s %s" % [s[:name], s[:url]] }
+    PROXY_SERVERS.each { |s| puts "%-10s %s" % [s[:name], s[:url]] }
+    return
+  end
+
+  if options[:office]
+    check_office_proxies
     return
   end
 
@@ -87,12 +133,7 @@ def main
 
   puts "Trying #{target_url} via proxy #{proxy_url} ... " if options[:debug]
 
-  proxy_args = proxy_url == 'none' ? [] : ['--proxy', proxy_url]
-  cmd = ['/usr/bin/curl', '--connect-timeout', '5', '-s',
-         *proxy_args, '-o', body_out, '-w', '%{http_code}\n', target_url]
-
-  output, status = Open3.capture2e(*cmd)
-  code = status.success? ? output.lines.first&.strip.to_i : 0
+  code = curl_check(proxy_url, target_url, body_out)
 
   if code == 200
     if options[:isp]
