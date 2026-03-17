@@ -93,9 +93,8 @@ cd existing-project
 cd my-project
 # 自動的に仮想環境がアクティベートされる
 
-# 必要に応じて手動でアクティベート
+# 必要に応じて手動でアクティベート（Pythonのみ）
 source .venv/bin/activate          # Python
-source .venv/bin/activate.sh       # Ruby
 ```
 
 ## MCP（Model Context Protocol）

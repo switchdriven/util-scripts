@@ -329,19 +329,14 @@ class RubyStrategy
   end
 
   def create_venv(venv_dir, version)
-    if Dir.exist?(venv_dir)
-      print_warn "Virtual environment already exists at #{venv_dir}"
-      return if !prompt_yes?("Do you want to recreate it?")
-
-      print_info "Removing existing virtual environment..."
-      FileUtils.rm_rf(venv_dir)
-    end
-
-    print_info "Creating virtual environment with Ruby #{version}..."
-    system("ruby -m venv #{venv_dir}")
-    print_info "Virtual environment created at #{venv_dir} ✓"
+    # Ruby doesn't have a venv system like Python.
+    # Bundler handles gem isolation via BUNDLE_PATH.
+    print_info "Configuring Bundler for local gem installation (#{venv_dir})..."
+    system("bundle config set --local path '#{venv_dir}'")
+    system("bundle config set --local bin '#{venv_dir}/bin'")
+    print_info "Bundler configured for local gems at #{venv_dir} ✓"
   rescue StandardError => e
-    print_error "Failed to create virtual environment: #{e.message}"
+    print_error "Failed to configure Bundler: #{e.message}"
     exit 1
   end
 
@@ -350,7 +345,7 @@ class RubyStrategy
   end
 
   def generate_venv_activation_line(venv_dir)
-    "source #{venv_dir}/bin/activate.sh\n"
+    "export BUNDLE_PATH=#{venv_dir}\nPATH_add #{venv_dir}/bin\n"
   end
 
   def create_project_files(project_dir, version)
