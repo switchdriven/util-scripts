@@ -176,6 +176,14 @@ uv 管理の Python 仮想環境のパッケージをメンテナンスするツ
 ./uv-maint.rb --help
 ```
 
+### uv-tool-maint.rb
+
+`uv tool install` でインストールしたツールの更新確認・アップグレードを行うツール。PyPI API で最新バージョンを確認し、全ツール一括・個別指定・対話選択でアップグレードできます。
+
+```bash
+./uv-tool-maint.rb --help
+```
+
 ### archive-folder.sh
 
 任意のディレクトリを日付付き tar.gz アーカイブでバックアップするスクリプト。
