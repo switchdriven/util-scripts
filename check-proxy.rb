@@ -24,7 +24,6 @@ require 'optparse'
 
 PROXY_SERVERS = [
   { name: 'none',    url: 'none' },                            # no proxy
-  { name: 'nuc',     url: 'http://nuc.local:3128' },           # nuc.local squid
   { name: 'cherry',  url: 'http://cherry.local:3128' },        # cherry.local squid
   { name: 'local',   url: 'http://localhost:3128' },           # localhost squid
   { name: 'office',  url: 'http://proxy.iiji.jp:8080' },       # IIJ Office proxy (round-robin)
