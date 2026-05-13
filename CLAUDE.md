@@ -173,7 +173,10 @@ MCPツールでエラーが発生した場合：
   - `open3`, `optparse`, `json`, `net/http` など標準添付ライブラリを優先
   - Homebrew Ruby（`/opt/homebrew/opt/ruby@3.3`）を使用、仮想環境なし・グローバルgem管理
   - 外部gem（nokogiri 等）はビルドコスト・グローバル汚染・可搬性低下のリスクがある
-- **外部gemが必要になる場合は Ruby ではなく Python で実装する**
+- **例外として、複数スクリプトで共有でき標準ライブラリで代替が面倒なgemは許容する**
+  - 例: `colorize`（カラー出力、複数スクリプトで使用）
+  - 単一スクリプト専用の依存は避ける
+- **上記に収まらない外部gemが必要になる場合は Ruby ではなく Python で実装する**
   - Python であれば `~/Scripts/.venv` で依存管理でき、環境が分離される
 - 適切なshebangを追加: `#!/opt/homebrew/opt/ruby@3.3/bin/ruby`
   - `#!/usr/bin/env ruby` は使わない（AppleScript 等から呼ばれると古い system Ruby が使われるため）
