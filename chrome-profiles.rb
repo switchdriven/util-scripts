@@ -14,11 +14,21 @@ BROWSERS = {
   'edge-canary'   => File.expand_path('~/Library/Application Support/Microsoft Edge Canary'),
 }.freeze
 
+APP_PATHS = {
+  'chrome'        => '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  'chromium'      => '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  'brave'         => '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+  'edge'          => '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+  'edge-beta'     => '/Applications/Microsoft Edge Beta.app/Contents/MacOS/Microsoft Edge Beta',
+  'edge-dev'      => '/Applications/Microsoft Edge Dev.app/Contents/MacOS/Microsoft Edge Dev',
+  'edge-canary'   => '/Applications/Microsoft Edge Canary.app/Contents/MacOS/Microsoft Edge Canary',
+}.freeze
+
 BOLD  = "\e[1m"
 CYAN  = "\e[36m"
 RESET = "\e[0m"
 
-options = { browser: 'chrome', all: false }
+options = { browser: 'chrome', all: false, launch: nil }
 
 OptionParser.new do |opts|
   opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [options]"
@@ -28,8 +38,14 @@ OptionParser.new do |opts|
           "対象ブラウザ (#{BROWSERS.keys.join(', ')})",
           "デフォルト: chrome") { |v| options[:browser] = v.downcase }
   opts.on('-a', '--all', 'インストール済みの全ブラウザを表示') { options[:all] = true }
+  opts.on('-l', '--launch FOLDER', 'プロファイルを指定して起動 (例: "Profile 2")') { |v| options[:launch] = v }
   opts.on('-h', '--help', 'このヘルプを表示') { puts opts; exit }
 end.parse!
+
+if options[:launch] && options[:all]
+  warn '--launch と --all は同時に指定できません。'
+  exit 1
+end
 
 def list_profiles(browser_name, data_dir)
   return false unless Dir.exist?(data_dir)
@@ -72,17 +88,37 @@ def list_profiles(browser_name, data_dir)
   true
 end
 
-if options[:all]
+browser = options[:browser]
+unless BROWSERS.key?(browser)
+  warn "未知のブラウザ: #{browser}"
+  warn "使用可能: #{BROWSERS.keys.join(', ')}"
+  exit 1
+end
+
+if options[:launch]
+  folder   = options[:launch]
+  data_dir = BROWSERS[browser]
+  app_path = APP_PATHS[browser]
+
+  unless Dir.exist?(File.join(data_dir, folder))
+    warn "プロファイルフォルダが見つかりません: #{folder}"
+    warn "利用可能なフォルダは --browser #{browser} で一覧確認してください。"
+    exit 1
+  end
+
+  app_bundle = app_path[/\A.*\.app/]
+  unless Dir.exist?(app_bundle)
+    warn "アプリが見つかりません: #{app_bundle}"
+    exit 1
+  end
+
+  system('open', '-na', app_bundle, '--args', "--profile-directory=#{folder}")
+  puts "#{browser} を #{folder} で起動しました。"
+elsif options[:all]
   found = false
   BROWSERS.each { |name, dir| found = true if list_profiles(name, dir) }
   warn '対応ブラウザが見つかりませんでした。' unless found
 else
-  browser = options[:browser]
-  unless BROWSERS.key?(browser)
-    warn "未知のブラウザ: #{browser}"
-    warn "使用可能: #{BROWSERS.keys.join(', ')}"
-    exit 1
-  end
   unless list_profiles(browser, BROWSERS[browser])
     warn "#{browser} のプロファイルディレクトリが見つかりませんでした: #{BROWSERS[browser]}"
     exit 1
