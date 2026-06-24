@@ -52,11 +52,11 @@ if ask_upgrade "npm" "$NPM_OUTDATED"; then
 fi
 
 # --- uv (global venv packages) ---
+# このリポジトリのスクリプトが直接依存する環境なので、自動アップグレードは行わず確認表示のみ。
+# 更新する場合は `uv-maint.rb -u` を手動で実行し、依存スクリプトの動作確認を行うこと。
 echo ""
 echo "=== uv (global venv) ==="
-if ask_upgrade_uv "uv" "$UV_MAINT_CMD" "All packages are up to date."; then
-    $UV_MAINT_CMD -u
-fi
+$UV_MAINT_CMD
 
 # --- uv tool (global tools) ---
 echo ""
