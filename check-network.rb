@@ -105,6 +105,13 @@ def parse_proxy(pac)
   m ? [m[1], m[2].to_i] : nil
 end
 
+def get_ssid
+  # get-ssid.sh defaults to en0 (Wi-Fi); the diagnosed iface may be wired (e.g. en10),
+  # so don't pass it through here.
+  out, _, st = Open3.capture3('get-ssid.sh')
+  st.success? ? out.strip : nil
+end
+
 def fetch_url(url, proxy_host: nil, proxy_port: nil)
   args = %w[/usr/bin/curl --connect-timeout 5 --max-time 10 -sk
             -o /dev/null -w %{http_code}]
@@ -125,6 +132,10 @@ def run(iface, use_arping: false)
 
   # Interface
   section 'Interface'
+  check('Wi-Fi SSID') do
+    ssid = get_ssid
+    [!ssid.nil?, ssid || 'get-ssid.sh failed']
+  end
   check("#{iface} is up") do
     out, = Open3.capture3('ifconfig', iface)
     active = out.include?('status: active')

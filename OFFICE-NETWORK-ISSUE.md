@@ -20,6 +20,7 @@
 ## チェック項目
 
 ### Interface
+- アクティブな Wi-Fi の SSID 表示（`get-ssid.sh` を使用、常に en0 を見る。診断対象インターフェースが有線でも実行される）
 - 指定インターフェース（デフォルト: en10）の `status: active` 確認
 - IP アドレスの取得確認
 
@@ -56,6 +57,7 @@ Network Diagnostic  [interface: en10]
 ============================================================
 
 ## Interface
+  Wi-Fi SSID                                             OK (JPWPA2)
   en10 is up                                             OK (IP: 10.x.x.x)
 
 ## L3 Connectivity
@@ -75,7 +77,7 @@ Network Diagnostic  [interface: en10]
   www.google.com     (社外・Proxy経由)                        OK (HTTP 200)
 
 ============================================================
-Result: 9/9 passed
+Result: 10/10 passed
 ```
 
 ## 実装メモ
@@ -108,3 +110,4 @@ DNS クエリからバランス状態は判断できない（DNS はヘルスチ
 |-----------|------|
 | `check-network.rb` | ネットワーク全体の診断（本スクリプト） |
 | `check-proxy.rb --office` | 社内Proxy（東西）の個別疎通確認 |
+| `get-ssid.sh` | Wi-Fi SSID 取得（`check-network.rb` から呼び出し） |
