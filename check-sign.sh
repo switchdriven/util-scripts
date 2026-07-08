@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
-# Validate digital signatures in a PDF file using pyHanko.
+# Validate digital signatures in a PDF file using pyHanko, and show the
+# certificate chain details (Subject/Issuer/Serial/validity/signature
+# algorithm) in Japanese.
 # Requires pyHanko installed in $HOME/Scripts/.venv.
 
 set -euo pipefail
 
-readonly PYHANKO="$HOME/Scripts/.venv/bin/pyhanko"
+readonly PYTHON="$HOME/Scripts/.venv/bin/python3"
+readonly SCRIPT="$HOME/Dev/util-scripts/check-sign.py"
 
 print_help() {
     cat << EOF
 Usage: $(basename "$0") [OPTIONS] <pdf_file>
 
-Validate digital signatures in a PDF file using pyHanko.
+Validate digital signatures in a PDF file using pyHanko, and show the
+certificate chain details in Japanese.
 
 Arguments:
   pdf_file    Path to the PDF file to validate (required)
@@ -57,4 +61,4 @@ if [[ ! -f "$PDF_FILE" ]]; then
     exit 1
 fi
 
-"$PYHANKO" sign validate --pretty-print --retroactive-revinfo --no-strict-syntax "$PDF_FILE"
+exec "$PYTHON" "$SCRIPT" "$PDF_FILE"

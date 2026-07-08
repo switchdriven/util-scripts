@@ -164,7 +164,7 @@ macOS の networksetup コマンドからネットワークサービス名とデ
 
 ### check-sign.sh
 
-pyHanko を使って PDF ファイルのデジタル署名を検証するスクリプト。
+pyHanko を使って PDF ファイルのデジタル署名(信頼チェーン・失効・改ざん検証)を検証し、証明書チェーンの詳細を日本語で表示するスクリプト。
 
 ```bash
 ./check-sign.sh --help
