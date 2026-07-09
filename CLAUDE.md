@@ -165,8 +165,10 @@ MCPツールでエラーが発生した場合：
 #### Pythonスクリプト
 - Python 3.13+ の機能を使用
 - 型ヒントを含める
-- 適切なshebangを追加: `#!/usr/bin/env python3`
 - スクリプトを実行可能にする: `chmod +x script.py`
+- shebangは実行形態に応じて使い分ける（詳細は[依存関係](#依存関係)を参照）
+  - このリポジトリのディレクトリ内で `./script.py` として直接実行する想定（direnvのactivateに依存してよい）: `#!/usr/bin/env python3`
+  - 他スクリプトから絶対パスで呼ばれる、または単体で自己完結すべき（direnvのactivateに頼れない）: `#!/Users/junya/Scripts/.venv/bin/python3`
 
 #### Rubyスクリプト
 - **標準ライブラリのみで実装することを原則とする**
@@ -210,11 +212,14 @@ MCPツールでエラーが発生した場合：
   ```
 
 ### 依存関係
-- Pythonの依存関係は`pyproject.toml`で管理
-  ```bash
-  # pyproject.toml の dependencies に追加後
-  uv pip install -e .
-  ```
+- Pythonの依存関係管理は、スクリプトのshebang方式によって扱いが分かれる
+  - **`#!/usr/bin/env python3`（direnv activate前提）のスクリプト**: 依存は`pyproject.toml`の`dependencies`で管理する
+    ```bash
+    # pyproject.toml の dependencies に追加後
+    uv pip install -e .
+    ```
+  - **`#!/Users/junya/Scripts/.venv/bin/python3`（絶対パス直指定）のスクリプト**: `pyproject.toml`には書かない。`uv pip install <package>`で`~/Scripts/.venv`に直接インストールするだけでよい
+    - 理由: このパターンのスクリプトは`-e .`を経由せず単体で実行されるため、`pyproject.toml`に書いても実行には影響しない（例: `check-sign.py`, `pdf-shrink.py`）
 - システムレベルの依存関係はREADMEに記載
 
 ### テスト
