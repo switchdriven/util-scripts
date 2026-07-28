@@ -80,20 +80,20 @@ claude update
 
 # --- Apple Container ---
 # https://github.com/apple/container
+# brew版に移行済み。バイナリ自体の更新は上記の Homebrew セクションで行われるため、
+# ここでは起動中なら再起動して新しいバージョンを反映するのみ。
 echo ""
 echo "=== Apple Container ==="
 CONTAINER_RUNNING=$(launchctl list | grep -e 'com\.apple\.container\W' || true)
 if [[ -n "$CONTAINER_RUNNING" ]]; then
     echo "[Apple Container] container が起動中です"
-    read -r -p "[Apple Container] 停止してアップデートしますか？ [y/N]: " answer
+    read -r -p "[Apple Container] 再起動しますか？ [y/N]: " answer
     if [[ "$answer" =~ ^[Yy]$ ]]; then
         container system stop
-        /usr/local/bin/update-container.sh
         container system start
     else
         echo "[Apple Container] スキップしました"
     fi
 else
-    /usr/local/bin/update-container.sh
     container system start
 fi
