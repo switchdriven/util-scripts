@@ -234,6 +234,14 @@ Chrome / Edge などの Chromium 系ブラウザのプロファイル名とフ�
 ./chrome-profiles.rb --help
 ```
 
+### clear-app-cache.rb
+
+`~/Library/Application Support` 以下でフォルダ名に「cache」を含むディレクトリ（Chrome/Edge/Zed などの再生成可能なキャッシュ）を検出・削除するツール。デフォルトはドライラン、`--execute` で削除（実行前に確認あり）。iPhoneバックアップ（MobileSync）は常に対象外。
+
+```bash
+./clear-app-cache.rb --help
+```
+
 ### update-all.sh
 
 Homebrew・npm（グローバル）・uv（グローバル仮想環境）・uv tool（グローバルツール）・App Store・Claude Code の更新有無を確認し、対話的にアップデートする一括スクリプト。`~`（ホームディレクトリ）で実行することを想定しており、`~/Scripts/.venv` のグローバル仮想環境を対象にする。なお uv（グローバル仮想環境）はこのリポジトリのスクリプトが直接依存するため、自動アップグレードは行わず確認表示のみとしている。Apple Container（brew 版）は Homebrew のアップグレードで更新されるため、ここでは起動中の場合のみ再起動して新しいバージョンを反映する。
