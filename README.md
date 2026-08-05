@@ -210,6 +210,14 @@ uv 管理の Python 仮想環境のパッケージをメンテナンスするツ
 ./mcp-keychain-setting.sh
 ```
 
+### mcp-obsidian.sh
+
+Keychain から Obsidian API キーを取得して Obsidian MCP サーバーを起動するラッパースクリプト。
+
+```bash
+./mcp-obsidian.sh
+```
+
 ### mcp-tavily.sh
 
 Keychain から Tavily API キーを取得して Tavily MCP サーバーを起動するラッパースクリプト。

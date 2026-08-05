@@ -10,6 +10,7 @@
 #   - Perplexity
 #   - Gemini
 #   - Tavily
+#   - Obsidian
 
 echo "Getting keys from 1password"
 
@@ -26,12 +27,16 @@ GEMINI_API_KEY=$(op read "op://Personal/bukkfg4ju6m54ln3xw7vwbblry/credential")
 # Tavily API キー
 TAVILY_API_KEY=$(op read "op://Personal/Tavily API/credential")
 
+# Obsidian API キー
+OBSIDIAN_API_KEY=$(op read "op://Personal/Obsidian API/credential")
+
 echo "Delete current keys"
 security delete-generic-password -s "github-personal-token" > /dev/null 2>&1
 security delete-generic-password -s "github-work-token" > /dev/null 2>&1
 security delete-generic-password -s "perplexity-token" > /dev/null 2>&1
 security delete-generic-password -s "gemini-token" > /dev/null 2>&1
 security delete-generic-password -s "tavily-token" > /dev/null 2>&1
+security delete-generic-password -s "obsidian-token" > /dev/null 2>&1
 
 echo "Setting tokens to keychain"
 
@@ -64,6 +69,12 @@ security add-generic-password \
   -s "tavily-token" \
   -a "$(whoami)" \
   -w "$TAVILY_API_KEY"
+
+# Obsidian API キー
+security add-generic-password \
+  -s "obsidian-token" \
+  -a "$(whoami)" \
+  -w "$OBSIDIAN_API_KEY"
 
 echo "Verifying tokens"
 
@@ -112,6 +123,14 @@ else
     echo "OK"
 fi
 
+TOKEN_OBSIDIAN=$(security find-generic-password -w -s "obsidian-token")
+printf "Check obsidian-token .. "
+if [ "$TOKEN_OBSIDIAN" != "$OBSIDIAN_API_KEY" ]; then
+    echo "NG"
+    exit 1
+else
+    echo "OK"
+fi
 
 exit 0 
 
