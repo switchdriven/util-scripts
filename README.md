@@ -242,6 +242,14 @@ Chrome / Edge などの Chromium 系ブラウザのプロファイル名とフ�
 ./clear-app-cache.rb --help
 ```
 
+### check-dotfile-links.rb
+
+Claude Code / Claude Desktop の設定ファイルについて、`~/Documents/Dotfiles` との symlink 運用が壊れていないかチェックし、壊れていれば修復するツール。デフォルトはドライラン、`--execute` で修復（内容が一致する場合のみ自動修復、異なる場合は警告して停止）。
+
+```bash
+./check-dotfile-links.rb --help
+```
+
 ### update-all.sh
 
 Homebrew・npm（グローバル）・uv（グローバル仮想環境）・uv tool（グローバルツール）・App Store・Claude Code の更新有無を確認し、対話的にアップデートする一括スクリプト。`~`（ホームディレクトリ）で実行することを想定しており、`~/Scripts/.venv` のグローバル仮想環境を対象にする。なお uv（グローバル仮想環境）はこのリポジトリのスクリプトが直接依存するため、自動アップグレードは行わず確認表示のみとしている。Apple Container（brew 版）は Homebrew のアップグレードで更新されるため、ここでは起動中の場合のみ再起動して新しいバージョンを反映する。
