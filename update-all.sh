@@ -7,6 +7,7 @@ NPM_CMD="/opt/homebrew/bin/npm"
 MAS_CMD="/opt/homebrew/bin/mas"
 UV_MAINT_CMD="$HOME/Scripts/Ruby/uv-maint.rb"
 UV_TOOL_MAINT_CMD="$HOME/Scripts/Ruby/uv-tool-maint.rb"
+export MAS_NO_AUTO_INDEX=1
 
 ask_upgrade() {
     local tool="$1"
