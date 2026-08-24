@@ -244,7 +244,7 @@ Chrome / Edge などの Chromium 系ブラウザのプロファイル名とフ�
 
 ### clear-app-cache.rb
 
-`~/Library/Application Support` 以下でフォルダ名に「cache」を含むディレクトリ（Chrome/Edge/Zed などの再生成可能なキャッシュ）を検出・削除するツール。デフォルトはドライラン、`--execute` で削除（実行前に確認あり）。iPhoneバックアップ（MobileSync）は常に対象外。
+`~/Library/Application Support` 以下でフォルダ名に「cache」を含むディレクトリ（Chrome/Edge/Zed などの再生成可能なキャッシュ）、Homebrew のダウンロードキャッシュ（`brew cleanup`経由）、uv のパッケージキャッシュ（`uv cache clean`経由）を検出・削除するツール。デフォルトはドライラン、`--execute` で削除（実行前に確認あり）。iPhoneバックアップ（MobileSync）は常に対象外。各セクションは `--skip-app-support` / `--skip-homebrew` / `--skip-uv` で個別に無効化可能。uv キャッシュは他プロセス（Claude Desktop の MCP サーバーなど）がロックを保持していると `lsof` で検出し、PID・起動元アプリを表示した上で削除をスキップする。
 
 ```bash
 ./clear-app-cache.rb --help
