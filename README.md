@@ -212,7 +212,7 @@ uv 管理の Python 仮想環境のパッケージをメンテナンスするツ
 
 ### mcp-obsidian.sh
 
-Keychain から Obsidian API キーを取得して Obsidian MCP サーバーを起動するラッパースクリプト。
+Keychain から Obsidian API キーを取得し、Local REST API 内蔵 MCP サーバーに mcp-remote 経由で接続するラッパースクリプト。
 
 ```bash
 ./mcp-obsidian.sh

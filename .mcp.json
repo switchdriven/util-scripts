@@ -1,20 +1,13 @@
 {
   "mcpServers": {
     "github-personal": {
-      "command": "/Users/junya/Scripts/Shell/mcp-github-personal.sh",
-      "args": [
-
-      ],
-      "env": {
-      }
+      "command": "/Users/junya/Scripts/Shell/mcp-github-personal.sh"
     },
     "github-work": {
-      "command": "/Users/junya/Scripts/Shell/mcp-github-work.sh",
-      "args": [
-
-      ],
-      "env": {
-      }
+      "command": "/Users/junya/Scripts/Shell/mcp-github-work.sh"
+    },
+    "obsidian": {
+      "command": "/Users/junya/Scripts/Shell/mcp-obsidian.sh"
     }
   }
 }
