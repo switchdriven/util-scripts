@@ -5,6 +5,7 @@ set -euo pipefail
 BREW_CMD="/opt/homebrew/bin/brew"
 NPM_CMD="/opt/homebrew/bin/npm"
 MAS_CMD="/opt/homebrew/bin/mas"
+JQ_CMD="/opt/homebrew/bin/jq"
 UV_MAINT_CMD="$HOME/Scripts/Ruby/uv-maint.rb"
 UV_TOOL_MAINT_CMD="$HOME/Scripts/Ruby/uv-tool-maint.rb"
 export MAS_NO_AUTO_INDEX=1
@@ -78,6 +79,21 @@ fi
 echo ""
 echo "=== Claude Code ==="
 claude update
+
+# --- Claude Code plugins ---
+# `claude plugin` には outdated 相当のコマンドが無いため、マーケットプレイスを更新した上で
+# user スコープのプラグインをすべて update にかける（最新なら何も変わらない）。
+# project/local スコープはカレントディレクトリ依存なので対象外。
+echo ""
+echo "=== Claude Code plugins ==="
+# 社内 GHE のマーケットプレイスは VPN 未接続時などに取得できないため、失敗しても続行する
+claude plugin marketplace update || echo "[Claude plugins] 一部のマーケットプレイスを更新できませんでした（キャッシュ済みのカタログで続行）"
+CLAUDE_PLUGINS=$(claude plugin list --json | $JQ_CMD -r '.[] | select(.scope == "user") | "\(.id)\t\(.version)"')
+if ask_upgrade "Claude plugins" "$CLAUDE_PLUGINS"; then
+    while IFS=$'\t' read -r plugin_id _; do
+        claude plugin update --scope user "$plugin_id" </dev/null || echo "[Claude plugins] $plugin_id の更新に失敗しました"
+    done <<< "$CLAUDE_PLUGINS"
+fi
 
 # --- Apple Container ---
 # https://github.com/apple/container
