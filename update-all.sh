@@ -36,6 +36,29 @@ ask_upgrade_uv() {
     [[ "$answer" =~ ^[Yy]$ ]]
 }
 
+# マーケットプレイスのカタログから plugin の最新バージョンを求める。判定できなければ空文字。
+# カタログの version を優先し、無ければ相対パスソースの plugin.json を見る（外部 git ソースは判定不可）。
+claude_plugin_latest_version() {
+    local name="$1"
+    local marketplace="$2"
+    local mp_dir
+    mp_dir=$($JQ_CMD -r --arg m "$marketplace" '.[$m].installLocation // empty' "$HOME/.claude/plugins/known_marketplaces.json")
+    [[ -n "$mp_dir" && -f "$mp_dir/.claude-plugin/marketplace.json" ]] || return 0
+    local entry
+    entry=$($JQ_CMD -c --arg n "$name" '.plugins[] | select(.name == $n)' "$mp_dir/.claude-plugin/marketplace.json")
+    [[ -n "$entry" ]] || return 0
+    local version
+    version=$($JQ_CMD -r '.version // empty' <<< "$entry")
+    if [[ -z "$version" ]]; then
+        local src
+        src=$($JQ_CMD -r '.source | if type == "string" then . else empty end' <<< "$entry")
+        if [[ -n "$src" && -f "$mp_dir/$src/.claude-plugin/plugin.json" ]]; then
+            version=$($JQ_CMD -r '.version // empty' "$mp_dir/$src/.claude-plugin/plugin.json")
+        fi
+    fi
+    echo "$version"
+}
+
 # --- Homebrew ---
 echo ""
 echo "=== Homebrew ==="
@@ -82,13 +105,23 @@ claude update
 
 # --- Claude Code plugins ---
 # `claude plugin` には outdated 相当のコマンドが無いため、マーケットプレイスを更新した上で
-# user スコープのプラグインをすべて update にかける（最新なら何も変わらない）。
+# カタログ上の最新バージョンとインストール済みバージョンを比較し、差分があるものだけ update にかける。
+# 最新バージョンを判定できない（外部 git ソース等）ものは更新候補に含める。
 # project/local スコープはカレントディレクトリ依存なので対象外。
 echo ""
 echo "=== Claude Code plugins ==="
 # 社内 GHE のマーケットプレイスは VPN 未接続時などに取得できないため、失敗しても続行する
 claude plugin marketplace update || echo "[Claude plugins] 一部のマーケットプレイスを更新できませんでした（キャッシュ済みのカタログで続行）"
-CLAUDE_PLUGINS=$(claude plugin list --json | $JQ_CMD -r '.[] | select(.scope == "user") | "\(.id)\t\(.version)"')
+CLAUDE_PLUGINS=""
+while IFS=$'\t' read -r plugin_id installed_version; do
+    [[ -n "$plugin_id" ]] || continue
+    latest_version=$(claude_plugin_latest_version "${plugin_id%@*}" "${plugin_id##*@}")
+    if [[ "$latest_version" == "$installed_version" ]]; then
+        continue
+    fi
+    CLAUDE_PLUGINS+="${plugin_id}"$'\t'"${installed_version} -> ${latest_version:-?(不明)}"$'\n'
+done < <(claude plugin list --json | $JQ_CMD -r '.[] | select(.scope == "user") | "\(.id)\t\(.version)"')
+CLAUDE_PLUGINS="${CLAUDE_PLUGINS%$'\n'}"
 if ask_upgrade "Claude plugins" "$CLAUDE_PLUGINS"; then
     while IFS=$'\t' read -r plugin_id _; do
         claude plugin update --scope user "$plugin_id" </dev/null || echo "[Claude plugins] $plugin_id の更新に失敗しました"
@@ -98,18 +131,26 @@ fi
 # --- Apple Container ---
 # https://github.com/apple/container
 # brew版に移行済み。バイナリ自体の更新は上記の Homebrew セクションで行われるため、
-# ここでは起動中なら再起動して新しいバージョンを反映するのみ。
+# ここでは起動中の apiserver が CLI（brew でインストール済みのバージョン）より古い場合のみ、
+# 再起動して新しいバージョンを反映する。
 echo ""
 echo "=== Apple Container ==="
 CONTAINER_RUNNING=$(launchctl list | grep -e 'com\.apple\.container\W' || true)
 if [[ -n "$CONTAINER_RUNNING" ]]; then
-    echo "[Apple Container] container が起動中です"
-    read -r -p "[Apple Container] 再起動しますか？ [y/N]: " answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
-        container system stop
-        container system start
+    CONTAINER_VERSIONS=$(container system version --format json)
+    CONTAINER_CLI_VERSION=$($JQ_CMD -r '.[] | select(.appName == "container") | .version' <<< "$CONTAINER_VERSIONS")
+    CONTAINER_SERVER_VERSION=$($JQ_CMD -r '.[] | select(.appName == "container-apiserver") | .version' <<< "$CONTAINER_VERSIONS")
+    if [[ "$CONTAINER_CLI_VERSION" == "$CONTAINER_SERVER_VERSION" ]]; then
+        echo "[Apple Container] 起動中の container は最新です ($CONTAINER_SERVER_VERSION)"
     else
-        echo "[Apple Container] スキップしました"
+        echo "[Apple Container] container が更新されています (起動中: $CONTAINER_SERVER_VERSION -> インストール済み: $CONTAINER_CLI_VERSION)"
+        read -r -p "[Apple Container] 再起動しますか？ [y/N]: " answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
+            container system stop
+            container system start
+        else
+            echo "[Apple Container] スキップしました"
+        fi
     fi
 else
     container system start
