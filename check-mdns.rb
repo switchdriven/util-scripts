@@ -11,7 +11,7 @@
 #   check-mdns.rb [options] [hostname...]
 #
 # Options:
-#   -H, --health           Show mDNS health check (mDNSResponder, UDP 5353)
+#   -H, --health           Show mDNS health check (mDNSResponder, self resolution)
 #   -c, --cache            Show DNS cache statistics
 #   -b, --browse           Browse Bonjour services and instances on local network
 #   -f, --flush            Flush DNS cache and restart mDNSResponder (sudo)
@@ -26,7 +26,16 @@ DEFAULT_TIMEOUT = 3
 
 def resolve_mdns(hostname, timeout:)
   fqdn = hostname.include?('.') ? hostname : "#{hostname}.local"
+  addresses = lookup_mdns(fqdn, timeout: timeout)
 
+  if addresses.any?
+    puts "  #{fqdn} -> #{addresses.join(', ')}"
+  else
+    puts "  #{fqdn} -> (no answer)"
+  end
+end
+
+def lookup_mdns(fqdn, timeout:)
   addresses  = []
   rd, wr     = IO.pipe
   pid        = spawn('/usr/bin/dns-sd', '-G', 'v4v6', fqdn, out: wr, err: File::NULL)
@@ -58,11 +67,7 @@ def resolve_mdns(hostname, timeout:)
   rd.close
   begin; Process.waitpid(pid); rescue Errno::ECHILD; end
 
-  if addresses.any?
-    puts "  #{fqdn} -> #{addresses.join(', ')}"
-  else
-    puts "  #{fqdn} -> (no answer)"
-  end
+  addresses
 end
 
 def show_cache_stats
@@ -157,7 +162,7 @@ def browse_services(timeout:)
   end
 end
 
-def healthcheck
+def healthcheck(timeout:)
   label_w = 16
 
   # mDNSResponder process
@@ -169,14 +174,19 @@ def healthcheck
     puts "  %-#{label_w}s NG   process not found" % 'mDNSResponder'
   end
 
-  # UDP 5353 listening (netstat doesn't require sudo)
-  ns_out, _, _ = Open3.capture3('/usr/sbin/netstat', '-an', '-f', 'inet')
-  ns6_out, _, _ = Open3.capture3('/usr/sbin/netstat', '-an', '-f', 'inet6')
-  listening = (ns_out + ns6_out).lines.any? { |l| l.match?(/udp.*\*\.5353\s/) }
-  if listening
-    puts "  %-#{label_w}s OK" % 'UDP :5353'
+  # Resolve own .local hostname via mDNS.
+  # (macOS 27+ hides sockets from non-root netstat/lsof, so UDP 5353 can't be checked directly)
+  host_out, _, hstatus = Open3.capture3('/usr/sbin/scutil', '--get', 'LocalHostName')
+  unless hstatus.success? && !host_out.strip.empty?
+    puts "  %-#{label_w}s NG   LocalHostName not set" % 'Self resolution'
+    return
+  end
+  fqdn = "#{host_out.strip}.local"
+  addresses = lookup_mdns(fqdn, timeout: timeout)
+  if addresses.any?
+    puts "  %-#{label_w}s OK   #{fqdn} (#{addresses.size} addresses)" % 'Self resolution'
   else
-    puts "  %-#{label_w}s NG   nothing listening" % 'UDP :5353'
+    puts "  %-#{label_w}s NG   #{fqdn} (no answer)" % 'Self resolution'
   end
 end
 
@@ -201,7 +211,7 @@ def main
     opts.separator 'Examples:'
     opts.separator '  check-mdns.rb nuc                # resolve nuc.local via mDNS'
     opts.separator '  check-mdns.rb nuc.local cherry   # resolve multiple hosts'
-    opts.separator '  check-mdns.rb -H                 # health check (mDNSResponder, UDP 5353)'
+    opts.separator '  check-mdns.rb -H                 # health check (mDNSResponder, self resolution)'
     opts.separator '  check-mdns.rb -c                 # show DNS cache statistics'
     opts.separator '  check-mdns.rb -b -t 5            # browse Bonjour services for 5s'
     opts.separator '  check-mdns.rb -f                 # flush DNS cache (sudo)'
@@ -235,7 +245,7 @@ def main
 
   if options[:health]
     puts '=== mDNS Health Check ===' if multi
-    healthcheck
+    healthcheck(timeout: options[:timeout])
     printed = true
   end
 

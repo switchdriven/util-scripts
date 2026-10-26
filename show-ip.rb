@@ -23,6 +23,16 @@ require 'json'
 
 IP_CMD = '/opt/homebrew/bin/ip'
 
+# Returns { "en0" => "aa:bb:cc:dd:ee:ff", ... } from networksetup.
+# macOS 27+ masks MAC addresses in ifconfig (and thus ip) as 02:00:00:00:00:00 for non-root users,
+# but networksetup still reports the real ones. Interfaces not listed there (e.g. bridge100) are absent.
+def hardware_macs
+  stdout, _, status = Open3.capture3('/usr/sbin/networksetup', '-listallhardwareports')
+  return {} unless status.success?
+
+  stdout.scan(/^Device: (\S+)\nEthernet Address: ([0-9a-f:]{17})$/i).to_h
+end
+
 def main
   options = { debug: false, inet: false, netif: nil, all: false }
 
@@ -64,6 +74,8 @@ def main
 
   $stderr.puts 'Device utun* is omitted' if options[:debug] && !options[:all]
 
+  macs = hardware_macs
+
   if_list.each do |index, ifname|
     iface = ip_data[index]
 
@@ -84,7 +96,8 @@ def main
 
     flags = iface['flags'].join(',')
     puts "#{ifname} : <#{flags}> mtu #{iface['mtu']} status #{iface['operstate']}"
-    puts "\t link/#{iface['address']} #{iface['link_type']} brd #{iface['broadcast']}" if iface['address']
+    mac = macs[ifname] || iface['address']
+    puts "\t link/#{mac} #{iface['link_type']} brd #{iface['broadcast']}" if mac
     addr_list.each { |addr| puts "\t #{addr}" }
   end
 end
