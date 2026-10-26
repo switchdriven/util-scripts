@@ -9,7 +9,7 @@
 #   check-network.rb [options]
 #
 # Options:
-#   -i, --interface IFACE   Network interface (default: en10)
+#   -i, --interface IFACE   Network interface (default: en9)
 #   -a, --arping            Use arping for gateway check instead of ping+ARP cache
 #   -h, --help              Show this help
 #
@@ -57,12 +57,16 @@ end
 # --- helpers ----------------------------------------------------------------
 
 def arp_reachable?(host, iface)
-  # Trigger ARP resolution via ping (ICMP reply not required), then check ARP cache for MAC address.
-  # This confirms L2 reachability even when the gateway blocks ICMP.
-  Open3.capture3('ping', '-c', '1', '-t', '2', '-I', iface, host)
+  # ICMP reply is sufficient proof of reachability. Otherwise fall back to the ARP cache,
+  # which confirms L2 reachability even when the gateway blocks ICMP.
+  # Note: macOS 27+ hides ARP entries from non-root users, so the fallback needs root there.
+  # macOS ping: -b binds to an interface (-I is for multicast only)
+  _, _, st = Open3.capture3('ping', '-c', '1', '-t', '2', '-b', iface, host)
+  return [true, 'ICMP reply'] if st.success?
+
   out, = Open3.capture3('arp', '-n', host)
   mac = out.match(/([0-9a-f]{1,2}(?::[0-9a-f]{1,2}){5})/i)&.[](1)
-  mac ? [true, "MAC: #{mac}"] : [false, 'no ARP entry']
+  mac ? [true, "MAC: #{mac}"] : [false, 'no ICMP reply / no ARP entry']
 end
 
 def arping_reachable?(host, iface)
@@ -106,7 +110,7 @@ def parse_proxy(pac)
 end
 
 def get_ssid
-  # get-ssid.sh defaults to en0 (Wi-Fi); the diagnosed iface may be wired (e.g. en10),
+  # get-ssid.sh defaults to en0 (Wi-Fi); the diagnosed iface may be wired (e.g. en9),
   # so don't pass it through here.
   out, _, st = Open3.capture3('get-ssid.sh')
   st.success? ? out.strip : nil
@@ -214,12 +218,12 @@ def run(iface, use_arping: false)
   puts
 end
 
-options = { interface: 'en10', arping: false }
+options = { interface: 'en9', arping: false }
 OptionParser.new do |opts|
   opts.banner = 'Usage: check-network.rb [options]'
   opts.separator ''
   opts.separator 'Options:'
-  opts.on('-i', '--interface IFACE', 'Network interface to check (default: en10)') { |v| options[:interface] = v }
+  opts.on('-i', '--interface IFACE', 'Network interface to check (default: en9)') { |v| options[:interface] = v }
   opts.on('-a', '--arping',          'Use arping for gateway check (requires root)') { options[:arping] = true }
   opts.on_tail('-h', '--help',       'Show this help') { puts opts; exit 0 }
 end.parse!
