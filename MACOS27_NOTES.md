@@ -43,7 +43,9 @@ macOS 27 では、root 以外のユーザーが実行したときに、次のコ
 - ログ: `~/Library/Logs/delayed-launch.log`
 - `open -g -j` で起動するので、フォーカスを奪わず、ウインドウも隠れた状態で起動する
 - AltTab は隠した状態（`-j`）で起動すると、ショートカットに反応しなくなる。設定ファイルで bundle ID の後ろに `nohide` と書いたアプリは `-j` を付けずに起動する
-- Alfred は権限の再要求を出さないが、ログイン直後に起動すると、Alfred から実行した AppleScript（`StartWork.scpt` など）が何も起きずに失敗する。Alfred を起動し直すと動くので、同じ TCC の問題と考えられる。再要求が出ないアプリでも、黙って権限が効かなくなっていることがあるので、遅延起動の対象にした（`nohide`）
+- Alfred は権限の再要求を出さないが、ログイン直後に起動すると、Alfred から実行した AppleScript（`StartWork.scpt` など）が何も起きずに失敗する。Alfred を起動し直すと動くので、同じ TCC の問題と考えられる。再要求が出ないアプリでも、黙って権限が効かなくなっていることがあるので、遅延起動の対象にした（`nohide`）。同じ理由で Dropover、Input Source Pro、Things ヘルパーも加えた（いずれも `nohide`）
+- Things ヘルパー（`~/Library/Application Support/Things Sandbox Helper/ThingsMacSandboxHelper.app`）は、起動すると自分でログイン項目に登録し直すので、ログイン項目から外せない。設定ファイルで `restart` と書いたアプリは、すでに動いていれば SIGTERM で終了させてから起動し直す。AppleScript の `quit` を使わないのは、オートメーション権限が必要で、ログイン直後は同じ TCC の問題に巻き込まれるおそれがあるため
+- 現在の対象（12個、起動順）: Thaw、Alfred 5、BetterTouchTool、PopClip、FlashSpace、Stay、Pastebot、Pipiri、Dropover、Input Source Pro、Things ヘルパー、AltTab
 - 待ち終わって起動を始めるときに通知を出す。起動に失敗したアプリがあったときは、完了時にも通知を出す（`--no-notify` で無効）。通知はスクリプトエディタから出るので、表示スタイルはシステム設定 → 通知 → スクリプトエディタ で変える
 - 2026-10-30 に再起動して、待ち時間30秒で7個が起動し、権限の再要求が出ないことを確認した。20秒、10秒と短縮しても再要求は出なかったので、10秒で運用している
 
@@ -61,6 +63,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.warumono.delayed-lau
 
 - システム設定 → 一般 → ログイン項目 にあるもの: そこから削除する
 - アプリ自身が登録しているもの（AltTab など）: アプリの設定で「ログイン時に起動」をオフにする
+- 自分でログイン項目に登録し直すもの（Things ヘルパー）: 外さずに、設定ファイルで `restart` を指定する
 
 ## 問題がなかったもの
 
