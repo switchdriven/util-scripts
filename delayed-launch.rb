@@ -40,7 +40,8 @@ def load_bundle_ids(path)
     exit 1
   end
 
-  File.readlines(path, chomp: true)
+  # launchd may start this before LANG is set, so do not rely on the default encoding
+  File.readlines(path, chomp: true, encoding: 'UTF-8')
       .map { |line| line.sub(/#.*/, '').strip }
       .reject(&:empty?)
 end
