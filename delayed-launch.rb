@@ -21,6 +21,10 @@
 # Config file format (one bundle ID per line, '#' starts a comment):
 #   com.hegenberg.BetterTouchTool   # BetterTouchTool
 #   com.pilotmoon.popclip           # PopClip
+#   com.lwouis.alt-tab-macos nohide # AltTab
+#
+# Apps are launched hidden (open -j) unless 'nohide' follows the bundle ID.
+# Some apps (e.g. AltTab) do not work when launched hidden.
 #
 
 require 'optparse'
@@ -29,6 +33,8 @@ require 'open3'
 DEFAULT_CONFIG   = File.join(Dir.home, '.config', 'delayed-launch', 'apps.conf')
 DEFAULT_DELAY    = 20
 DEFAULT_INTERVAL = 1
+
+App = Struct.new(:id, :hide)
 
 def log(msg)
   puts "#{Time.now.strftime('%Y-%m-%d %H:%M:%S')} #{msg}"
@@ -43,7 +49,7 @@ def notify(msg)
   log "notify failed: #{err.strip}" unless status.success?
 end
 
-def load_bundle_ids(path)
+def load_apps(path)
   unless File.exist?(path)
     warn "error: config file not found: #{path}"
     exit 1
@@ -51,8 +57,9 @@ def load_bundle_ids(path)
 
   # launchd may start this before LANG is set, so do not rely on the default encoding
   File.readlines(path, chomp: true, encoding: 'UTF-8')
-      .map { |line| line.sub(/#.*/, '').strip }
+      .map { |line| line.sub(/#.*/, '').split }
       .reject(&:empty?)
+      .map { |id, *flags| App.new(id, !flags.include?('nohide')) }
 end
 
 def app_path(bundle_id)
@@ -60,35 +67,37 @@ def app_path(bundle_id)
   out.lines.map(&:chomp).find { |p| p.end_with?('.app') }
 end
 
-def dry_run(bundle_ids)
+def dry_run(apps)
   missing = 0
-  bundle_ids.each do |id|
-    path = app_path(id)
+  apps.each do |app|
+    path = app_path(app.id)
+    note = app.hide ? '' : ' [nohide]'
     if path
-      puts "OK       #{id}  (#{path})"
+      puts "OK       #{app.id}#{note}  (#{path})"
     else
-      puts "NOTFOUND #{id}"
+      puts "NOTFOUND #{app.id}#{note}"
       missing += 1
     end
   end
   exit(missing.zero? ? 0 : 1)
 end
 
-def launch_all(bundle_ids, delay:, interval:, notify:)
-  log "waiting #{delay}s before launching #{bundle_ids.size} apps"
+def launch_all(apps, delay:, interval:, notify:)
+  log "waiting #{delay}s before launching #{apps.size} apps"
   sleep delay
-  notify("#{bundle_ids.size}個のアプリを起動します") if notify
+  notify("#{apps.size}個のアプリを起動します") if notify
 
   failed = 0
-  bundle_ids.each_with_index do |id, i|
+  apps.each_with_index do |app, i|
     sleep interval if i.positive?
     # -g: launch in the background so the apps do not steal focus
     # -j: launch hidden so the apps do not pop up their windows
-    _, err, status = Open3.capture3('open', '-g', '-j', '-b', id)
+    args = ['-g', ('-j' if app.hide), '-b', app.id].compact
+    _, err, status = Open3.capture3('open', *args)
     if status.success?
-      log "launched #{id}"
+      log "launched #{app.id}#{' (nohide)' unless app.hide}"
     else
-      log "failed   #{id}: #{err.strip}"
+      log "failed   #{app.id}: #{err.strip}"
       failed += 1
     end
   end
@@ -129,11 +138,11 @@ def main
     end
   end.parse!
 
-  bundle_ids = load_bundle_ids(options[:config])
+  apps = load_apps(options[:config])
   if options[:dry_run]
-    dry_run(bundle_ids)
+    dry_run(apps)
   else
-    launch_all(bundle_ids, delay: options[:delay], interval: options[:interval], notify: options[:notify])
+    launch_all(apps, delay: options[:delay], interval: options[:interval], notify: options[:notify])
   end
 end
 
