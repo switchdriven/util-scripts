@@ -38,7 +38,7 @@ macOS 27 では、root 以外のユーザーが実行したときに、次のコ
 
 対応として `delayed-launch.rb` を追加した。対象アプリはログイン項目から外し、LaunchAgent からこのスクリプトを実行して、10秒待ってから順に起動する。
 
-- 対象アプリの一覧: `~/.config/delayed-launch/apps.conf`（1行に1つ bundle ID を書く）
+- 対象アプリの一覧: `~/.config/delayed-launch/apps.conf`（1行に1つ bundle ID を書く）。バックアップをリポジトリの `delayed-launch-apps.conf` に置いている。変更したらこちらにもコピーする
 - 待ち時間: `--delay`（初期値 10 秒）。再要求がまだ出るときは延ばす
 - ログ: `~/Library/Logs/delayed-launch.log`
 - `open -g -j` で起動するので、フォーカスを奪わず、ウインドウも隠れた状態で起動する
@@ -54,6 +54,7 @@ macOS 27 では、root 以外のユーザーが実行したときに、次のコ
 導入手順:
 
 ```bash
+mkdir -p ~/.config/delayed-launch && cp delayed-launch-apps.conf ~/.config/delayed-launch/apps.conf
 sed -e "s|PATH_TO_SCRIPT|$HOME/Dev/util-scripts|" -e "s|HOME_DIR|$HOME|g" \
   org.warumono.delayed-launch.plist.template > ~/Library/LaunchAgents/org.warumono.delayed-launch.plist
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.warumono.delayed-launch.plist
