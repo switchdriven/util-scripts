@@ -12,7 +12,7 @@
 #
 # Options:
 #   -c, --config PATH     App list (default: ~/.config/delayed-launch/apps.conf)
-#   -d, --delay SEC       Seconds to wait before launching (default: 20)
+#   -d, --delay SEC       Seconds to wait before launching (default: 10)
 #   -i, --interval SEC    Seconds between each launch (default: 1)
 #   -n, --dry-run         Check the app list without waiting or launching
 #       --no-notify       Do not show notifications (before launching, and on failure)
@@ -31,7 +31,7 @@ require 'optparse'
 require 'open3'
 
 DEFAULT_CONFIG   = File.join(Dir.home, '.config', 'delayed-launch', 'apps.conf')
-DEFAULT_DELAY    = 20
+DEFAULT_DELAY    = 10
 DEFAULT_INTERVAL = 1
 
 App = Struct.new(:id, :hide)
