@@ -32,6 +32,29 @@ macOS 27 では、root 以外のユーザーが実行したときに、次のコ
 
 `check-network.rb -a`（arping）はもともと root で実行する前提なので、影響しない。
 
+## ログイン時に起動したアプリがアクセシビリティ権限を再要求する
+
+ログイン項目で自動起動したアプリが、システム設定上は許可済みなのにアクセシビリティ権限を再要求することがある。BetterTouchTool、PopClip、AltTab など、権限を使う常駐アプリのほとんどで起きた。ログイン直後に TCC（`tccd`）の準備ができていないためと推測されている。Apple の公式な説明はない。起動を遅らせれば起きないという報告がある。
+
+対応として `delayed-launch.rb` を追加した。対象アプリはログイン項目から外し、LaunchAgent からこのスクリプトを実行して、30秒待ってから順に起動する。
+
+- 対象アプリの一覧: `~/.config/delayed-launch/apps.conf`（1行に1つ bundle ID を書く）
+- 待ち時間: `--delay`（初期値 30 秒）。再要求がまだ出るときは延ばす
+- ログ: `~/Library/Logs/delayed-launch.log`
+
+導入手順:
+
+```bash
+sed -e "s|PATH_TO_SCRIPT|$HOME/Dev/util-scripts|" -e "s|HOME_DIR|$HOME|g" \
+  org.warumono.delayed-launch.plist.template > ~/Library/LaunchAgents/org.warumono.delayed-launch.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.warumono.delayed-launch.plist
+```
+
+そのうえで、対象アプリの自動起動を止める。登録のされ方によって止める場所が違う（`sudo sfltool dumpbtm` で確認できる）。
+
+- システム設定 → 一般 → ログイン項目 にあるもの: そこから削除する
+- アプリ自身が登録しているもの（AltTab など）: アプリの設定で「ログイン時に起動」をオフにする
+
 ## 問題がなかったもの
 
 - Homebrew Ruby 3.3.13（`arm64-darwin27`）、`~/Scripts/.venv` の Python 3.14.9 は正常に動作した。

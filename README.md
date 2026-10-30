@@ -266,6 +266,14 @@ Homebrew・npm（グローバル）・uv（グローバル仮想環境）・uv t
 ./update-all.sh
 ```
 
+### delayed-launch.rb
+
+`~/.config/delayed-launch/apps.conf` に書いたアプリ（bundle ID）を、ログイン後に数十秒待ってから起動するスクリプト。macOS 27 でログイン時に起動したアプリがアクセシビリティ権限を再要求する問題を避けるためのもの。LaunchAgent（`org.warumono.delayed-launch.plist.template`）から実行する。詳細は [MACOS27_NOTES.md](MACOS27_NOTES.md) を参照。
+
+```bash
+./delayed-launch.rb --help
+```
+
 ## 必須ツール
 
 ### Ruby環境（setup-ruby-env.rb使用時）
