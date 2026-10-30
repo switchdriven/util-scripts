@@ -12,10 +12,10 @@
 #
 # Options:
 #   -c, --config PATH     App list (default: ~/.config/delayed-launch/apps.conf)
-#   -d, --delay SEC       Seconds to wait before launching (default: 30)
+#   -d, --delay SEC       Seconds to wait before launching (default: 20)
 #   -i, --interval SEC    Seconds between each launch (default: 1)
 #   -n, --dry-run         Check the app list without waiting or launching
-#       --no-notify       Do not show notifications when starting and finishing
+#       --no-notify       Do not show notifications (on start, and on failure)
 #   -h, --help            Show this help
 #
 # Config file format (one bundle ID per line, '#' starts a comment):
@@ -27,7 +27,7 @@ require 'optparse'
 require 'open3'
 
 DEFAULT_CONFIG   = File.join(Dir.home, '.config', 'delayed-launch', 'apps.conf')
-DEFAULT_DELAY    = 30
+DEFAULT_DELAY    = 20
 DEFAULT_INTERVAL = 1
 
 def log(msg)
@@ -94,12 +94,7 @@ def launch_all(bundle_ids, delay:, interval:, notify:)
   end
   log 'done'
 
-  return unless notify
-
-  launched = bundle_ids.size - failed
-  msg = "#{launched}個のアプリを起動しました"
-  msg += "（#{failed}個失敗。ログを確認してください）" if failed.positive?
-  notify(msg)
+  notify("#{failed}個のアプリの起動に失敗しました。ログを確認してください") if notify && failed.positive?
 end
 
 def main
@@ -124,7 +119,7 @@ def main
       options[:dry_run] = true
     end
 
-    opts.on('--no-notify', 'Do not show notifications when starting and finishing') do
+    opts.on('--no-notify', 'Do not show notifications (on start, and on failure)') do
       options[:notify] = false
     end
 
