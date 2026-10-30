@@ -22,9 +22,12 @@
 #   com.hegenberg.BetterTouchTool   # BetterTouchTool
 #   com.pilotmoon.popclip           # PopClip
 #   com.lwouis.alt-tab-macos nohide # AltTab
+#   com.culturedcode.ThingsMacSandboxHelper nohide restart
 #
-# Apps are launched hidden (open -j) unless 'nohide' follows the bundle ID.
-# Some apps (e.g. AltTab) do not work when launched hidden.
+# Flags after the bundle ID:
+#   nohide   Launch without -j. Some apps (e.g. AltTab) do not work when launched hidden.
+#   restart  Quit the app first if it is already running. For apps that re-register
+#            themselves as a login item (e.g. Things helper) and so start too early.
 #
 
 require 'optparse'
@@ -33,8 +36,9 @@ require 'open3'
 DEFAULT_CONFIG   = File.join(Dir.home, '.config', 'delayed-launch', 'apps.conf')
 DEFAULT_DELAY    = 10
 DEFAULT_INTERVAL = 1
+QUIT_TIMEOUT     = 5
 
-App = Struct.new(:id, :hide)
+App = Struct.new(:id, :hide, :restart)
 
 def log(msg)
   puts "#{Time.now.strftime('%Y-%m-%d %H:%M:%S')} #{msg}"
@@ -59,7 +63,7 @@ def load_apps(path)
   File.readlines(path, chomp: true, encoding: 'UTF-8')
       .map { |line| line.sub(/#.*/, '').split }
       .reject(&:empty?)
-      .map { |id, *flags| App.new(id, !flags.include?('nohide')) }
+      .map { |id, *flags| App.new(id, !flags.include?('nohide'), flags.include?('restart')) }
 end
 
 def app_path(bundle_id)
@@ -67,11 +71,36 @@ def app_path(bundle_id)
   out.lines.map(&:chomp).find { |p| p.end_with?('.app') }
 end
 
+def running_pids(path)
+  out, = Open3.capture2('pgrep', '-f', "^#{Regexp.escape(path)}/Contents/MacOS/")
+  out.split.map(&:to_i)
+end
+
+# Use SIGTERM rather than an AppleScript 'quit', which needs the Automation
+# permission and could itself be hit by the TCC issue right after login.
+def quit_if_running(app)
+  path = app_path(app.id)
+  return unless path
+
+  pids = running_pids(path)
+  return if pids.empty?
+
+  Process.kill('TERM', *pids)
+  QUIT_TIMEOUT.times do
+    break if running_pids(path).empty?
+
+    sleep 1
+  end
+  log "quit     #{app.id} (pid #{pids.join(', ')})"
+rescue Errno::ESRCH
+  # Already gone
+end
+
 def dry_run(apps)
   missing = 0
   apps.each do |app|
     path = app_path(app.id)
-    note = app.hide ? '' : ' [nohide]'
+    note = "#{' [nohide]' unless app.hide}#{' [restart]' if app.restart}"
     if path
       puts "OK       #{app.id}#{note}  (#{path})"
     else
@@ -90,6 +119,7 @@ def launch_all(apps, delay:, interval:, notify:)
   failed = 0
   apps.each_with_index do |app, i|
     sleep interval if i.positive?
+    quit_if_running(app) if app.restart
     # -g: launch in the background so the apps do not steal focus
     # -j: launch hidden so the apps do not pop up their windows
     args = ['-g', ('-j' if app.hide), '-b', app.id].compact
