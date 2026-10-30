@@ -15,7 +15,7 @@
 #   -d, --delay SEC       Seconds to wait before launching (default: 20)
 #   -i, --interval SEC    Seconds between each launch (default: 1)
 #   -n, --dry-run         Check the app list without waiting or launching
-#       --no-notify       Do not show notifications (on start, and on failure)
+#       --no-notify       Do not show notifications (before launching, and on failure)
 #   -h, --help            Show this help
 #
 # Config file format (one bundle ID per line, '#' starts a comment):
@@ -76,8 +76,8 @@ end
 
 def launch_all(bundle_ids, delay:, interval:, notify:)
   log "waiting #{delay}s before launching #{bundle_ids.size} apps"
-  notify("#{delay}秒後に#{bundle_ids.size}個のアプリを起動します") if notify
   sleep delay
+  notify("#{bundle_ids.size}個のアプリを起動します") if notify
 
   failed = 0
   bundle_ids.each_with_index do |id, i|
@@ -119,7 +119,7 @@ def main
       options[:dry_run] = true
     end
 
-    opts.on('--no-notify', 'Do not show notifications (on start, and on failure)') do
+    opts.on('--no-notify', 'Do not show notifications (before launching, and on failure)') do
       options[:notify] = false
     end
 
