@@ -71,7 +71,8 @@ def launch_all(bundle_ids, delay:, interval:)
   bundle_ids.each_with_index do |id, i|
     sleep interval if i.positive?
     # -g: launch in the background so the apps do not steal focus
-    _, err, status = Open3.capture3('open', '-g', '-b', id)
+    # -j: launch hidden so the apps do not pop up their windows
+    _, err, status = Open3.capture3('open', '-g', '-j', '-b', id)
     if status.success?
       log "launched #{id}"
     else
