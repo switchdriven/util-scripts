@@ -15,6 +15,7 @@
 #   -d, --delay SEC       Seconds to wait before launching (default: 30)
 #   -i, --interval SEC    Seconds between each launch (default: 1)
 #   -n, --dry-run         Check the app list without waiting or launching
+#       --no-notify       Do not show notifications when starting and finishing
 #   -h, --help            Show this help
 #
 # Config file format (one bundle ID per line, '#' starts a comment):
@@ -32,6 +33,14 @@ DEFAULT_INTERVAL = 1
 def log(msg)
   puts "#{Time.now.strftime('%Y-%m-%d %H:%M:%S')} #{msg}"
   $stdout.flush
+end
+
+def notify(msg)
+  # Pass the text as arguments so it is never interpreted as AppleScript
+  script = ['on run argv', 'display notification (item 1 of argv) with title (item 2 of argv)', 'end run']
+  args = script.flat_map { |line| ['-e', line] }
+  _, err, status = Open3.capture3('osascript', *args, msg, 'delayed-launch')
+  log "notify failed: #{err.strip}" unless status.success?
 end
 
 def load_bundle_ids(path)
@@ -65,10 +74,12 @@ def dry_run(bundle_ids)
   exit(missing.zero? ? 0 : 1)
 end
 
-def launch_all(bundle_ids, delay:, interval:)
+def launch_all(bundle_ids, delay:, interval:, notify:)
   log "waiting #{delay}s before launching #{bundle_ids.size} apps"
+  notify("#{delay}秒後に#{bundle_ids.size}個のアプリを起動します") if notify
   sleep delay
 
+  failed = 0
   bundle_ids.each_with_index do |id, i|
     sleep interval if i.positive?
     # -g: launch in the background so the apps do not steal focus
@@ -78,13 +89,21 @@ def launch_all(bundle_ids, delay:, interval:)
       log "launched #{id}"
     else
       log "failed   #{id}: #{err.strip}"
+      failed += 1
     end
   end
   log 'done'
+
+  return unless notify
+
+  launched = bundle_ids.size - failed
+  msg = "#{launched}個のアプリを起動しました"
+  msg += "（#{failed}個失敗。ログを確認してください）" if failed.positive?
+  notify(msg)
 end
 
 def main
-  options = { config: DEFAULT_CONFIG, delay: DEFAULT_DELAY, interval: DEFAULT_INTERVAL, dry_run: false }
+  options = { config: DEFAULT_CONFIG, delay: DEFAULT_DELAY, interval: DEFAULT_INTERVAL, dry_run: false, notify: true }
 
   OptionParser.new do |opts|
     opts.banner = 'Usage: delayed-launch.rb [options]'
@@ -105,6 +124,10 @@ def main
       options[:dry_run] = true
     end
 
+    opts.on('--no-notify', 'Do not show notifications when starting and finishing') do
+      options[:notify] = false
+    end
+
     opts.on_tail('-h', '--help', 'Show this help') do
       puts opts
       exit 0
@@ -115,7 +138,7 @@ def main
   if options[:dry_run]
     dry_run(bundle_ids)
   else
-    launch_all(bundle_ids, delay: options[:delay], interval: options[:interval])
+    launch_all(bundle_ids, delay: options[:delay], interval: options[:interval], notify: options[:notify])
   end
 end
 
