@@ -12,8 +12,10 @@
 #
 # Options:
 #   -c, --config PATH     App list (default: ~/.config/delayed-launch/apps.conf)
-#   -d, --delay SEC       Seconds to wait before launching (default: 15)
+#   -d, --delay SEC       Seconds to wait before launching (default: 15, 0 with --restart-all)
 #   -i, --interval SEC    Seconds between each launch (default: 1)
+#   -r, --restart-all     Quit and relaunch every app in the list, as if all had 'restart'.
+#                         Run this by hand when some apps still lost their permission.
 #   -n, --dry-run         Check the app list without waiting or launching
 #       --no-notify       Do not show notifications (before launching, and on failure)
 #   -h, --help            Show this help
@@ -76,8 +78,17 @@ def running_pids(path)
   out.split.map(&:to_i)
 end
 
-# Use SIGTERM rather than an AppleScript 'quit', which needs the Automation
-# permission and could itself be hit by the TCC issue right after login.
+# Ask the app to quit normally, like Cmd+Q or Quit in the Dock.
+# Use NSRunningApplication#terminate rather than an AppleScript 'quit', which
+# needs the Automation permission and could itself be hit by the TCC issue.
+TERMINATE_SCRIPT = <<~JS
+  ObjC.import('AppKit');
+  function run(argv) {
+    const apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier(argv[0]);
+    for (let i = 0; i < apps.count; i++) apps.objectAtIndex(i).terminate;
+  }
+JS
+
 def quit_if_running(app)
   path = app_path(app.id)
   return unless path
@@ -85,15 +96,22 @@ def quit_if_running(app)
   pids = running_pids(path)
   return if pids.empty?
 
-  Process.kill('TERM', *pids)
+  _, err, status = Open3.capture3('osascript', '-l', 'JavaScript', '-e', TERMINATE_SCRIPT, app.id)
+  unless status.success?
+    log "quit failed #{app.id}: #{err.strip}"
+    return
+  end
+
   QUIT_TIMEOUT.times do
-    break if running_pids(path).empty?
+    if running_pids(path).empty?
+      log "quit     #{app.id} (pid #{pids.join(', ')})"
+      return
+    end
 
     sleep 1
   end
-  log "quit     #{app.id} (pid #{pids.join(', ')})"
-rescue Errno::ESRCH
-  # Already gone
+  # Do not force it: the app may be waiting for the user (e.g. unsaved changes)
+  log "still running after #{QUIT_TIMEOUT}s, not relaunched: #{app.id}"
 end
 
 def dry_run(apps)
@@ -112,8 +130,10 @@ def dry_run(apps)
 end
 
 def launch_all(apps, delay:, interval:, notify:)
-  log "waiting #{delay}s before launching #{apps.size} apps"
-  sleep delay
+  if delay.positive?
+    log "waiting #{delay}s before launching #{apps.size} apps"
+    sleep delay
+  end
   notify("#{apps.size}個のアプリを起動します") if notify
 
   failed = 0
@@ -137,7 +157,8 @@ def launch_all(apps, delay:, interval:, notify:)
 end
 
 def main
-  options = { config: DEFAULT_CONFIG, delay: DEFAULT_DELAY, interval: DEFAULT_INTERVAL, dry_run: false, notify: true }
+  options = { config: DEFAULT_CONFIG, delay: nil, interval: DEFAULT_INTERVAL, restart_all: false, dry_run: false,
+              notify: true }
 
   OptionParser.new do |opts|
     opts.banner = 'Usage: delayed-launch.rb [options]'
@@ -146,12 +167,17 @@ def main
       options[:config] = File.expand_path(v)
     end
 
-    opts.on('-d', '--delay SEC', Integer, "Seconds to wait before launching (default: #{DEFAULT_DELAY})") do |v|
+    opts.on('-d', '--delay SEC', Integer,
+            "Seconds to wait before launching (default: #{DEFAULT_DELAY}, 0 with --restart-all)") do |v|
       options[:delay] = v
     end
 
     opts.on('-i', '--interval SEC', Integer, "Seconds between each launch (default: #{DEFAULT_INTERVAL})") do |v|
       options[:interval] = v
+    end
+
+    opts.on('-r', '--restart-all', "Quit and relaunch every app in the list, as if all had 'restart'") do
+      options[:restart_all] = true
     end
 
     opts.on('-n', '--dry-run', 'Check the app list without waiting or launching') do
@@ -169,10 +195,12 @@ def main
   end.parse!
 
   apps = load_apps(options[:config])
+  apps.each { |app| app.restart = true } if options[:restart_all]
+  delay = options[:delay] || (options[:restart_all] ? 0 : DEFAULT_DELAY)
   if options[:dry_run]
     dry_run(apps)
   else
-    launch_all(apps, delay: options[:delay], interval: options[:interval], notify: options[:notify])
+    launch_all(apps, delay: delay, interval: options[:interval], notify: options[:notify])
   end
 end
 
