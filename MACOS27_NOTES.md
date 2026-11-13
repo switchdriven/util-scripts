@@ -44,7 +44,8 @@ macOS 27 では、root 以外のユーザーが実行したときに、次のコ
 - `open -g -j` で起動するので、フォーカスを奪わず、ウインドウも隠れた状態で起動する
 - AltTab は隠した状態（`-j`）で起動すると、ショートカットに反応しなくなる。設定ファイルで bundle ID の後ろに `nohide` と書いたアプリは `-j` を付けずに起動する
 - Alfred は権限の再要求を出さないが、ログイン直後に起動すると、Alfred から実行した AppleScript（`StartWork.scpt` など）が何も起きずに失敗する。Alfred を起動し直すと動くので、同じ TCC の問題と考えられる。再要求が出ないアプリでも、黙って権限が効かなくなっていることがあるので、遅延起動の対象にした（`nohide`）。同じ理由で Dropover、Input Source Pro、Things ヘルパーも加えた（いずれも `nohide`）
-- Things ヘルパー（`~/Library/Application Support/Things Sandbox Helper/ThingsMacSandboxHelper.app`）は、起動すると自分でログイン項目に登録し直すので、ログイン項目から外せない。設定ファイルで `restart` と書いたアプリは、すでに動いていれば SIGTERM で終了させてから起動し直す。AppleScript の `quit` を使わないのは、オートメーション権限が必要で、ログイン直後は同じ TCC の問題に巻き込まれるおそれがあるため
+- Things ヘルパー（`~/Library/Application Support/Things Sandbox Helper/ThingsMacSandboxHelper.app`）は、起動すると自分でログイン項目に登録し直すので、ログイン項目から外せない。設定ファイルで `restart` と書いたアプリは、すでに動いていれば終了させてから起動し直す。終了は `NSRunningApplication#terminate`（Cmd+Q と同じ通常の終了）で頼み、5秒以内に終わらなければ強制終了せずログに残す。AppleScript の `quit` を使わないのは、オートメーション権限が必要で、ログイン直後は同じ TCC の問題に巻き込まれるおそれがあるため
+- 遅延起動しても権限が正しく取れないアプリがあったときは、`delayed-launch.rb -r` を手で実行すると、対象アプリをすべて終了させて起動し直す（待ち時間は0秒）
 - 現在の対象（12個、起動順）: Thaw、Alfred 5、BetterTouchTool、PopClip、FlashSpace、Stay、Pastebot、Pipiri、Dropover、Input Source Pro、Things ヘルパー、AltTab
 - 待ち終わって起動を始めるときに通知を出す。起動に失敗したアプリがあったときは、完了時にも通知を出す（`--no-notify` で無効）。通知はスクリプトエディタから出るので、表示スタイルはシステム設定 → 通知 → スクリプトエディタ で変える
 - 2026-10-30 に再起動して、待ち時間30秒で7個が起動し、権限の再要求が出ないことを確認した。20秒、10秒と短縮しても再要求は出なかったので、10秒で運用していた
@@ -66,6 +67,23 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.warumono.delayed-lau
 - システム設定 → 一般 → ログイン項目 にあるもの: そこから削除する
 - アプリ自身が登録しているもの（AltTab など）: アプリの設定で「ログイン時に起動」をオフにする
 - 自分でログイン項目に登録し直すもの（Things ヘルパー）: 外さずに、設定ファイルで `restart` を指定する
+
+## Pastebot が起動直後に約1分固まる
+
+2026-11-13、macOS 27.2 (26B123)・Pastebot 3.2 で発生した。起動するとレインボーのボールが回って何も受け付けず、約60秒たつと動き出す。ログイン時の遅延起動でも、Alfred から起動しても同じだった（`delayed-launch.rb` とは無関係）。
+
+原因は、次の2つが重なったこと。`sample` で固まっている最中のスタックを取って特定した。
+
+- **Pastebot**: 起動時に履歴の項目を読み込むとき（`-[PTHPastebotItem fetchPreferredItemValue:]`）、HTML 形式の項目の変換（`-[NSAttributedString initWithData:options:...]`）をメインスレッドに同期で投げて待っている
+- **macOS 27.2**: HTML の変換は別プロセスの `nsattributedstringagent` が WebKit で行う。このプロセスから WebPrivacy（`com.apple.webprivacyd`）への接続がサンドボックスで拒否され（`error 159 - Sandbox restriction`）、WebKit が再試行を繰り返して諦めるまでに約60秒かかる（ログに `SecurityFlagsController: giving up on the disabled security flags`）。2回目以降の変換はすぐ終わる
+
+クリップボードの今の中身は関係なく、プレーンテキストをコピーしてから起動しても変わらなかった。**履歴を全部削除したら、すぐ起動するようになった。** Web ページなどから HTML 形式でコピーした項目が履歴に入ると再発する可能性がある。
+
+固まっている最中のスタックは次のコマンドで取れる（`sudo` は不要）。
+
+```bash
+sample Pastebot 5 -file ~/Desktop/pastebot-sample.txt
+```
 
 ## 問題がなかったもの
 
