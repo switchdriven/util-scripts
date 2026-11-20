@@ -38,7 +38,7 @@ macOS 27 では、root 以外のユーザーが実行したときに、次のコ
 
 対応として `delayed-launch.rb` を追加した。対象アプリはログイン項目から外し、LaunchAgent からこのスクリプトを実行して、15秒待ってから順に起動する。
 
-- 対象アプリの一覧: `~/.config/delayed-launch/apps.conf`（1行に1つ bundle ID を書く）。バックアップをリポジトリの `delayed-launch-apps.conf` に置いている。変更したらこちらにもコピーする
+- 対象アプリの一覧: `~/.config/delayed-launch/apps.conf`（1行に1つ bundle ID を書く。同じ bundle ID のアプリが複数あるとき（Alfred 5 と 6 など）は `"/Applications/Alfred 6.app"` のようにパスを書く）。バックアップをリポジトリの `delayed-launch-apps.conf` に置いている。変更したらこちらにもコピーする
 - 待ち時間: `--delay`（初期値 15 秒）。再要求がまだ出るときは延ばす
 - ログ: `~/Library/Logs/delayed-launch.log`
 - `open -g -j` で起動するので、フォーカスを奪わず、ウインドウも隠れた状態で起動する
@@ -46,7 +46,7 @@ macOS 27 では、root 以外のユーザーが実行したときに、次のコ
 - Alfred は権限の再要求を出さないが、ログイン直後に起動すると、Alfred から実行した AppleScript（`StartWork.scpt` など）が何も起きずに失敗する。Alfred を起動し直すと動くので、同じ TCC の問題と考えられる。再要求が出ないアプリでも、黙って権限が効かなくなっていることがあるので、遅延起動の対象にした（`nohide`）。同じ理由で Dropover、Input Source Pro、Things ヘルパーも加えた（いずれも `nohide`）
 - Things ヘルパー（`~/Library/Application Support/Things Sandbox Helper/ThingsMacSandboxHelper.app`）は、起動すると自分でログイン項目に登録し直すので、ログイン項目から外せない。設定ファイルで `restart` と書いたアプリは、すでに動いていれば終了させてから起動し直す。終了は `NSRunningApplication#terminate`（Cmd+Q と同じ通常の終了）で頼み、5秒以内に終わらなければ強制終了せずログに残す。AppleScript の `quit` を使わないのは、オートメーション権限が必要で、ログイン直後は同じ TCC の問題に巻き込まれるおそれがあるため
 - 遅延起動しても権限が正しく取れないアプリがあったときは、`delayed-launch.rb -r` を手で実行すると、対象アプリをすべて終了させて起動し直す（待ち時間は0秒）
-- 現在の対象（12個、起動順）: Thaw、Alfred 5、BetterTouchTool、PopClip、FlashSpace、Stay、Pastebot、Pipiri、Dropover、Input Source Pro、Things ヘルパー、AltTab
+- 現在の対象（12個、起動順）: Thaw、Alfred 6、BetterTouchTool、PopClip、FlashSpace、Stay、Pastebot、Pipiri、Dropover、Input Source Pro、Things ヘルパー、AltTab
 - 待ち終わって起動を始めるときに通知を出す。起動に失敗したアプリがあったときは、完了時にも通知を出す（`--no-notify` で無効）。通知はスクリプトエディタから出るので、表示スタイルはシステム設定 → 通知 → スクリプトエディタ で変える
 - 2026-10-30 に再起動して、待ち時間30秒で7個が起動し、権限の再要求が出ないことを確認した。20秒、10秒と短縮しても再要求は出なかったので、10秒で運用していた
 - 2026-11-02 のログインでは、Pipiri が再要求を出さずに黙って動かなかった（起動し直すと動いた）。10秒では足りないことがあると考え、15秒に延ばした

@@ -20,13 +20,17 @@
 #       --no-notify       Do not show notifications (before launching, and on failure)
 #   -h, --help            Show this help
 #
-# Config file format (one bundle ID per line, '#' starts a comment):
+# Config file format (one app per line, '#' starts a comment):
 #   com.hegenberg.BetterTouchTool   # BetterTouchTool
+#   "/Applications/Alfred 6.app" nohide # Alfred 6
 #   com.pilotmoon.popclip           # PopClip
 #   com.lwouis.alt-tab-macos nohide # AltTab
 #   com.culturedcode.ThingsMacSandboxHelper nohide restart
 #
-# Flags after the bundle ID:
+# Each app is a bundle ID, or a quoted absolute path to the .app. Use the path when
+# several versions share one bundle ID (e.g. Alfred 5 and 6).
+#
+# Flags after the app:
 #   nohide   Launch without -j. Some apps (e.g. AltTab) do not work when launched hidden.
 #   restart  Quit the app first if it is already running. For apps that re-register
 #            themselves as a login item (e.g. Things helper) and so start too early.
@@ -63,12 +67,19 @@ def load_apps(path)
 
   # launchd may start this before LANG is set, so do not rely on the default encoding
   File.readlines(path, chomp: true, encoding: 'UTF-8')
-      .map { |line| line.sub(/#.*/, '').split }
+      .map { |line| line.sub(/#.*/, '').scan(/"[^"]*"|\S+/).map { |w| w.delete('"') } }
       .reject(&:empty?)
       .map { |id, *flags| App.new(id, !flags.include?('nohide'), flags.include?('restart')) }
 end
 
-def app_path(bundle_id)
+def path?(id)
+  id.start_with?('/')
+end
+
+def app_path(id)
+  return (id if Dir.exist?(id)) if path?(id)
+
+  bundle_id = id
   out, = Open3.capture2('mdfind', "kMDItemCFBundleIdentifier == '#{bundle_id}'")
   out.lines.map(&:chomp).find { |p| p.end_with?('.app') }
 end
@@ -81,11 +92,14 @@ end
 # Ask the app to quit normally, like Cmd+Q or Quit in the Dock.
 # Use NSRunningApplication#terminate rather than an AppleScript 'quit', which
 # needs the Automation permission and could itself be hit by the TCC issue.
+# Select by pid, not bundle ID, so another version with the same bundle ID is left alone.
 TERMINATE_SCRIPT = <<~JS
   ObjC.import('AppKit');
   function run(argv) {
-    const apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier(argv[0]);
-    for (let i = 0; i < apps.count; i++) apps.objectAtIndex(i).terminate;
+    for (const pid of argv) {
+      const app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(Number(pid));
+      if (app) app.terminate;
+    }
   }
 JS
 
@@ -96,7 +110,7 @@ def quit_if_running(app)
   pids = running_pids(path)
   return if pids.empty?
 
-  _, err, status = Open3.capture3('osascript', '-l', 'JavaScript', '-e', TERMINATE_SCRIPT, app.id)
+  _, err, status = Open3.capture3('osascript', '-l', 'JavaScript', '-e', TERMINATE_SCRIPT, *pids.map(&:to_s))
   unless status.success?
     log "quit failed #{app.id}: #{err.strip}"
     return
@@ -142,7 +156,7 @@ def launch_all(apps, delay:, interval:, notify:)
     quit_if_running(app) if app.restart
     # -g: launch in the background so the apps do not steal focus
     # -j: launch hidden so the apps do not pop up their windows
-    args = ['-g', ('-j' if app.hide), '-b', app.id].compact
+    args = ['-g', ('-j' if app.hide), (path?(app.id) ? '-a' : '-b'), app.id].compact
     _, err, status = Open3.capture3('open', *args)
     if status.success?
       log "launched #{app.id}#{' (nohide)' unless app.hide}"
